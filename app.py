@@ -4,39 +4,42 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
 import gspread
-from google.oauth2.service_account import Credentials # <--- ESTO ES LO NUEVO
+from google.oauth2.service_account import Credentials # <--- ESTO ES VITAL
 
 # --- 1. CONFIGURACIÓN VISUAL ---
 st.set_page_config(page_title="Monitor S.E.R. | Anahat", page_icon="🧘", layout="centered")
 st.markdown("""<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;}</style>""", unsafe_allow_html=True)
 
-# --- 2. CONEXIÓN MODERNA (GOOGLE AUTH) ---
-# --- 2. CONEXIÓN MODERNA CORREGIDA ---
+# --- 2. CONEXIÓN BLINDADA (CON PERMISOS DE DRIVE) ---
 def conectar_db():
-    # AQUÍ ESTABA EL ERROR: Faltaba el permiso de Drive
+    # Definimos los DOS permisos necesarios (Spreadsheets Y Drive)
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
     
-    # Leemos la llave del TOML de Streamlit
-    creds_dict = st.secrets["gcp_service_account"]
-    
-    # Generamos las credenciales con los permisos nuevos
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    client = gspread.authorize(creds)
-    
-    # Abrimos la hoja
-    sheet = client.open("DB_Anahat_Clientes").sheet1
-    return sheet
+    # Leemos la llave de los secretos
+    try:
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        
+        # Generamos credenciales modernas
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        client = gspread.authorize(creds)
+        
+        # Abrimos la hoja por nombre
+        sheet = client.open("DB_Anahat_Clientes").sheet1
+        return sheet
+    except Exception as e:
+        st.error(f"⚠️ Error detallado de conexión: {e}")
+        st.stop()
 
-# --- 3. LÓGICA MATEMÁTICA (S.E.R.) ---
+# --- 3. CÁLCULO S.E.R. ---
 def calcular_ser(respuestas):
-    # A. ENERGÍA (Inverso: 20 - suma)
+    # A. ENERGÍA (Inverso)
     raw_ene = respuestas['insomnio'] + respuestas['neblina'] + respuestas['suspiros'] + respuestas['aire']
     score_ene = ((20 - raw_ene) / 20) * 100 
     
-    # B. REGULACIÓN (Inverso: 20 - suma)
+    # B. REGULACIÓN (Inverso)
     raw_reg = respuestas['espalda'] + respuestas['estomago'] + respuestas['panico'] + respuestas['cabeza']
     score_reg = ((20 - raw_reg) / 20) * 100 
     
@@ -52,13 +55,10 @@ def calcular_ser(respuestas):
 st.title("👁️ Tu Monitor S.E.R.")
 st.markdown("Unidad Consciente: **Somática • Energía • Regulación**")
 
-# Verificamos conexión al inicio para que sepas si funciona
-try:
-    test_conn = conectar_db()
-    st.success("✅ Conexión con Base de Datos exitosa")
-except Exception as e:
-    st.error(f"⚠️ Error conectando a Google Sheets: {e}")
-    st.stop() # Detiene la app si no hay conexión
+# Prueba de conexión automática al abrir
+sheet = conectar_db()
+if sheet:
+    st.toast("✅ Conectado a la Base de Datos", icon="🟢")
 
 email = st.text_input("Ingresa tu correo registrado para iniciar:").strip().lower()
 
@@ -113,15 +113,15 @@ if email:
                 elif idx < 75: nivel = "🟡 Resistencia"
                 else: nivel = "🟢 Coherencia"
                 
-                sheet = conectar_db()
+                # Guardar
                 fecha = datetime.now().strftime("%Y-%m-%d")
                 sheet.append_row([fecha, email, nombre_input, s_s, s_e, s_r, idx, nivel])
                 st.success("✅ ¡Datos guardados! Ve a la pestaña 'MI PROGRESO'.")
                 st.balloons()
 
-    # --- PESTAÑA 2: RESULTADOS ---
+    # --- PESTAÑA 2: DASHBOARD ---
     with tab2:
-        sheet = conectar_db()
+        # Cargar datos frescos
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
         
@@ -137,8 +137,6 @@ if email:
                 
                 st.subheader("Tu Mapa vs La Tribu")
                 
-                # Promedio del grupo
-                # Ojo: Asegúrate que los nombres de columnas coinciden con tu Sheet
                 promedio_grupo = df[['Score_Somatica', 'Score_Energia', 'Score_Regulacion']].mean()
                 
                 categorias = ['Somática', 'Energía', 'Regulación']
