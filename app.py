@@ -11,19 +11,22 @@ st.set_page_config(page_title="Monitor S.E.R. | Anahat", page_icon="🧘", layou
 st.markdown("""<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;}</style>""", unsafe_allow_html=True)
 
 # --- 2. CONEXIÓN MODERNA (GOOGLE AUTH) ---
+# --- 2. CONEXIÓN MODERNA CORREGIDA ---
 def conectar_db():
-    # Definimos los permisos
-    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    # AQUÍ ESTABA EL ERROR: Faltaba el permiso de Drive
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
     
     # Leemos la llave del TOML de Streamlit
     creds_dict = st.secrets["gcp_service_account"]
     
-    # Usamos la librería nueva de Google
+    # Generamos las credenciales con los permisos nuevos
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     client = gspread.authorize(creds)
     
     # Abrimos la hoja
-    # OJO: Asegúrate que tu hoja se llame EXACTAMENTE así en Google Drive
     sheet = client.open("DB_Anahat_Clientes").sheet1
     return sheet
 
