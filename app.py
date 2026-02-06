@@ -14,7 +14,15 @@ st.markdown("""<style>
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     .stMetric {text-align: center;}
     .big-font {font-size:20px !important; font-weight: bold; color: #8A2BE2;}
-    .info-box {background-color: #f0f2f6; padding: 15px; border-radius: 10px; margin-bottom: 20px;}
+    .legal-text {font-size: 12px; color: #666;}
+    .scale-legend {
+        background-color: #e6e6fa; 
+        padding: 10px; 
+        border-radius: 5px; 
+        text-align: center; 
+        font-weight: bold; 
+        margin-bottom: 20px;
+    }
 </style>""", unsafe_allow_html=True)
 
 # ==========================================
@@ -35,65 +43,60 @@ def conectar_db():
         st.stop()
 
 # ==========================================
-# 3. MATEMÁTICA: ESCALA 1.0 a 5.0
+# 3. LÓGICA MATEMÁTICA (1-5)
 # ==========================================
-def calcular_ser(respuestas):
-    # Fórmula: (Ratio de Bienestar * 4) + 1
-    # Resultado: 1.0 (Peor) a 5.0 (Mejor)
+def calcular_ser_v2(respuestas):
+    # LÓGICA:
+    # Preguntas Inversas (Síntomas): 5 es malo, 1 es bueno. -> Fórmula: 6 - respuesta
+    # Preguntas Directas (Conexión): 5 es bueno, 1 es malo. -> Fórmula: respuesta
     
-    # A. ENERGÍA (Inverso: 0 es mejor) -> Total 20 pts
-    # Si suma 0 (perfecto) -> (20-0)/20 = 1.0 -> 1*4+1 = 5.0
-    raw_ene = respuestas['insomnio'] + respuestas['neblina'] + respuestas['suspiros'] + respuestas['aire']
-    score_ene = ((20 - raw_ene) / 20) * 4 + 1
+    # A. ENERGÍA (4 preguntas inversas)
+    raw_ene = [respuestas['e1'], respuestas['e2'], respuestas['e3'], respuestas['e4']]
+    score_ene = sum([(6 - x) for x in raw_ene]) / 4
     
-    # B. REGULACIÓN (Inverso: 0 es mejor) -> Total 20 pts
-    raw_reg = respuestas['espalda'] + respuestas['estomago'] + respuestas['panico'] + respuestas['cabeza']
-    score_reg = ((20 - raw_reg) / 20) * 4 + 1
+    # B. REGULACIÓN (8 preguntas inversas)
+    raw_reg = [respuestas[f'r{i}'] for i in range(1, 9)]
+    score_reg = sum([(6 - x) for x in raw_reg]) / 8
     
-    # C. SOMÁTICA (Mixto) -> Total 40 pts posibles
-    # Directas (0 malo, 5 bueno) + Inversas (0 bueno, 5 malo)
-    directas = respuestas['incomodo'] + respuestas['resp'] + respuestas['postura'] + respuestas['emocion'] + respuestas['calma']
-    inversas_pts = (5 - respuestas['distraigo']) + (5 - respuestas['preocupo']) + (5 - respuestas['ignoro'])
-    
-    total_som = directas + inversas_pts # Max 40
-    score_som = (total_som / 40) * 4 + 1
+    # C. SOMÁTICA (17 preguntas directas)
+    raw_som = [respuestas[f's{i}'] for i in range(1, 18)]
+    score_som = sum(raw_som) / 17
     
     # Promedio Final
     indice = (score_ene + score_reg + score_som) / 3
+    
     return round(score_som, 2), round(score_ene, 2), round(score_reg, 2), round(indice, 2)
 
 # ==========================================
-# 4. DIAGNÓSTICO DE NIVELES (RIGOR CIENTÍFICO)
+# 4. DIAGNÓSTICO DE NIVELES
 # ==========================================
 def obtener_diagnostico(indice):
     if indice < 2.0:
-        titulo = "🔴 NIVEL 1: DESCONEXIÓN (Colapso Dorsal)"
-        desc = "**Tu cuerpo dice:** 'No es seguro estar aquí, apágate'.\n\n**Significado:** Tu sistema está en modo de ahorro de energía extremo. Es probable que sientas entumecimiento, neblina mental severa o fatiga crónica. No es que 'no quieras', es que tu biología no tiene recursos."
+        titulo = "🔴 NIVEL 1: DESCONEXIÓN (Colapso)"
+        desc = "Tu sistema está en 'ahorro de energía' extremo. Sensación de apagado o fatiga crónica."
     elif indice < 3.0:
-        titulo = "🟠 NIVEL 2: SOBREVIVENCIA (Activación Simpática)"
-        desc = "**Tu cuerpo dice:** '¡Peligro! Lucha o huye'.\n\n**Significado:** Hay mucha energía pero desregulada. Ansiedad, reactividad, dolor agudo o insomnio. Tu sistema está gastando todos sus recursos en defenderse de amenazas (reales o percibidas)."
+        titulo = "🟠 NIVEL 2: SOBREVIVENCIA (Alerta)"
+        desc = "Tu sistema está en lucha/huida. Mucha energía desregulada, ansiedad o dolor agudo."
     elif indice < 4.0:
-        titulo = "🟡 NIVEL 3: RESISTENCIA FUNCIONAL"
-        desc = "**Tu cuerpo dice:** 'Aguanta, no te detengas'.\n\n**Significado:** Eres funcional y productivo, pero a un costo metabólico muy alto. 'Aguantas' el estrés en lugar de procesarlo. Es el estado más común antes del agotamiento o burnout."
+        titulo = "🟡 NIVEL 3: RESISTENCIA (Funcional)"
+        desc = "Eres funcional y productivo, pero a un costo energético alto. 'Aguantas' el estrés."
     elif indice < 4.6:
-        titulo = "🟢 NIVEL 4: REGULACIÓN ACTIVA"
-        desc = "**Tu cuerpo dice:** 'Puedo manejar esto'.\n\n**Significado:** Tienes herramientas. Sientes el estrés, pero logras volver a la calma (Ventana de Tolerancia). Tu energía es estable y tu descanso es reparador."
+        titulo = "🟢 NIVEL 4: REGULACIÓN (Equilibrio)"
+        desc = "Tienes herramientas. Sientes el estrés pero logras volver a la calma."
     else:
-        titulo = "🟣 NIVEL 5: COHERENCIA (Ventral Vagal)"
-        desc = "**Tu cuerpo dice:** 'Estoy a salvo para crear y conectar'.\n\n**Significado:** Estado óptimo. Tu mente, emociones y cuerpo están alineados. Tienes disponibilidad energética para expandirte, crear y sostener a otros."
+        titulo = "🟣 NIVEL 5: COHERENCIA (Fluidez)"
+        desc = "Estado óptimo. Mente y cuerpo alineados, con energía disponible para crear."
     return titulo, desc
 
 # ==========================================
-# 5. GRÁFICAS (RADAR Y BARRAS)
+# 5. GRÁFICAS
 # ==========================================
 def graficar_radar(val_som, val_ene, val_reg, prom_som, prom_ene, prom_reg):
     fig = go.Figure()
-    # TÚ
     fig.add_trace(go.Scatterpolar(r=[val_som, val_ene, val_reg], theta=['SOMÁTICA', 'ENERGÍA', 'REGULACIÓN'], fill='toself', name='TÚ', line_color='#8A2BE2'))
-    # GRUPO
-    fig.add_trace(go.Scatterpolar(r=[prom_som, prom_ene, prom_reg], theta=['SOMÁTICA', 'ENERGÍA', 'REGULACIÓN'], fill='toself', name='PROMEDIO GRUPO', line_color='gray', opacity=0.3, line_dash='dot'))
-    
-    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])), showlegend=True, height=350, margin=dict(t=20, b=20, l=40, r=40))
+    if prom_som > 0:
+        fig.add_trace(go.Scatterpolar(r=[prom_som, prom_ene, prom_reg], theta=['SOMÁTICA', 'ENERGÍA', 'REGULACIÓN'], fill='toself', name='GRUPO', line_color='gray', opacity=0.3, line_dash='dot'))
+    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[1, 5])), showlegend=True, height=350, margin=dict(t=20, b=20, l=40, r=40))
     return fig
 
 def graficar_barra_comparativa(titulo, valor_usuario, valor_grupo, color_barra):
@@ -103,12 +106,12 @@ def graficar_barra_comparativa(titulo, valor_usuario, valor_grupo, color_barra):
         'Color': [color_barra, 'gray']
     })
     fig = px.bar(df_chart, x='Puntaje', y='Entidad', orientation='h', text='Puntaje', title=titulo, color='Color', color_discrete_map={color_barra: color_barra, 'gray': 'gray'})
-    fig.update_layout(xaxis=dict(range=[0, 5.5]), showlegend=False, height=200, margin=dict(l=20, r=20, t=40, b=20))
+    fig.update_layout(xaxis=dict(range=[1, 5.5]), showlegend=False, height=180, margin=dict(l=20, r=20, t=30, b=20))
     fig.update_traces(texttemplate='%{text:.1f}', textposition='outside')
     return fig
 
 # ==========================================
-# 6. INTERFAZ PRINCIPAL
+# 6. APP PRINCIPAL
 # ==========================================
 st.title("👁️ Tu Monitor S.E.R.")
 
@@ -122,80 +125,100 @@ if email_input:
     
     # --- PESTAÑA 1: FORMULARIO ---
     with tab1:
-        st.write("### Chequeo de Coherencia")
-        st.caption("Responde con honestidad (0 = Nunca/No | 5 = Siempre/Mucho)")
-        with st.form("test_ser"):
-            c1, c2 = st.columns(2)
-            with c1:
-                st.info("⚡ ENERGÍA")
-                e1 = st.slider("Insomnio / sueño no reparador", 0, 5, 0)
-                e2 = st.slider("Neblina mental", 0, 5, 0)
-                e3 = st.slider("Suspiros involuntarios", 0, 5, 0)
-                e4 = st.slider("Falta de aire", 0, 5, 0)
-            with c2:
-                st.info("🌊 REGULACIÓN")
-                r1 = st.slider("Dolor de espalda", 0, 5, 0)
-                r2 = st.slider("Problemas estomacales", 0, 5, 0)
-                r3 = st.slider("Pánico / ansiedad", 0, 5, 0)
-                r4 = st.slider("Dolor de cabeza", 0, 5, 0)
+        st.markdown("""
+        <div class="scale-legend">
+        ESCALA: 1 = Nunca | 2 = Casi nunca | 3 = A veces | 4 = Frecuentemente | 5 = Siempre
+        </div>
+        """, unsafe_allow_html=True)
+        
+        with st.form("test_ser_v2"):
+            # --- SECCIÓN A: ENERGÍA ---
+            st.info("⚡ SECCIÓN A (4 preguntas)")
+            e1 = st.slider("1. ¿Tienes insomnio con frecuencia?", 1, 5, 1)
+            e2 = st.slider("2. ¿Tienes dificultad para concentrarte?", 1, 5, 1)
+            e3 = st.slider("3. ¿Sientes falta de aire frecuentemente?", 1, 5, 1)
+            e4 = st.slider("4. ¿Te dan infecciones respiratorias con frecuencia?", 1, 5, 1)
             
-            st.info("🧘 SOMÁTICA")
-            s1 = st.slider("Noto cuando estoy incómodo", 0, 5, 0)
-            s2 = st.slider("Noto cambios en mi respiración", 0, 5, 0)
-            s3 = st.slider("Noto mi postura", 0, 5, 0)
-            s4 = st.slider("Noto dónde siento emociones", 0, 5, 0)
-            s5 = st.slider("Encuentro calma interna", 0, 5, 0)
-            st.markdown("**Hébitos de Desconexión:**")
-            s_inv1 = st.slider("Me distraigo para no sentir", 0, 5, 0)
-            s_inv2 = st.slider("Me preocupo por molestias físicas", 0, 5, 0)
-            s_inv3 = st.slider("Ignoro el dolor", 0, 5, 0)
+            # --- SECCIÓN B: REGULACIÓN ---
+            st.info("🌊 SECCIÓN B (8 preguntas)")
+            r1 = st.slider("1. ¿Sientes dolor de espalda?", 1, 5, 1)
+            r2 = st.slider("2. ¿Tienes problemas estomacales?", 1, 5, 1)
+            r3 = st.slider("3. ¿Experimentas ataques de pánico?", 1, 5, 1)
+            r4 = st.slider("4. ¿Tienes dolores de cabeza?", 1, 5, 1)
+            r5 = st.slider("5. ¿Suspiras frecuentemente?", 1, 5, 1)
+            r6 = st.slider("6. ¿Ignoras la tensión física hasta que es severa?", 1, 5, 1)
+            r7 = st.slider("7. ¿Te distraes de las sensaciones de malestar?", 1, 5, 1)
+            r8 = st.slider("8. ¿Te preocupas apenas sientes una molestia?", 1, 5, 1)
             
-            nombre_input = st.text_input("Tu Nombre:")
+            # --- SECCIÓN C: SOMÁTICA ---
+            st.info("🧘 SECCIÓN C (17 preguntas)")
+            s1 = st.slider("1. ¿Notas cuando te sientes incómodo en tu cuerpo?", 1, 5, 1)
+            s2 = st.slider("2. ¿Notas cambios en mi respiración?", 1, 5, 1)
+            s3 = st.slider("3. ¿Puedes prestar atención a tu respiración sin distraerte?", 1, 5, 1)
+            s4 = st.slider("4. ¿Puedes mantener consciencia interna aunque haya movimiento alrededor?", 1, 5, 1)
+            s5 = st.slider("5. ¿Al conversar, puedes prestar atención a tu postura?", 1, 5, 1)
+            s6 = st.slider("6. ¿Puedes volver a concentrarte en tu cuerpo si te distraes?", 1, 5, 1)
+            s7 = st.slider("7. ¿Puedes redirigir tu atención de pensamientos a sensaciones?", 1, 5, 1)
+            s8 = st.slider("8. ¿Mantienes consciencia del cuerpo aunque una parte duela?", 1, 5, 1)
+            s9 = st.slider("9. ¿Eres capaz de enfocarte en tu cuerpo como un todo?", 1, 5, 1)
+            s10 = st.slider("10. ¿Notas cómo cambia tu cuerpo cuando estás enojado?", 1, 5, 1)
+            s11 = st.slider("11. ¿Notas que tu cuerpo se siente diferente tras una experiencia pacífica?", 1, 5, 1)
+            s12 = st.slider("12. ¿Notas que tu respiración se libera cuando estás cómodo?", 1, 5, 1)
+            s13 = st.slider("13. ¿Al sentirte abrumado, encuentras un lugar de calma dentro de ti?", 1, 5, 1)
+            s14 = st.slider("14. ¿Al sentirte tenso, usas tu respiración para reducir tensión?", 1, 5, 1)
+            s15 = st.slider("15. ¿Cuando estás estresado, sabes relajarte físicamente?", 1, 5, 1)
+            s16 = st.slider("16. ¿Respetas lo que tu cuerpo pide (descanso, comida)?", 1, 5, 1)
+            s17 = st.slider("17. ¿Al tomar decisiones, consultas tus sensaciones corporales?", 1, 5, 1)
+            
+            st.divider()
+            st.markdown("### 🔒 Consentimiento")
+            nombre_input = st.text_input("Tu Nombre Completo:")
+            check_datos = st.checkbox("✅ Acepto el procesamiento de mis datos para el diagnóstico.")
+            check_imagen = st.checkbox("📸 Autorizo uso anónimo de datos para fines estadísticos.")
+            
             submitted = st.form_submit_button("CALCULAR ÍNDICE")
             
-            if submitted and nombre_input:
-                datos = {'insomnio': e1, 'neblina': e2, 'suspiros': e3, 'aire': e4,
-                         'espalda': r1, 'estomago': r2, 'panico': r3, 'cabeza': r4,
-                         'incomodo': s1, 'resp': s2, 'postura': s3, 'emocion': s4, 'calma': s5,
-                         'distraigo': s_inv1, 'preocupo': s_inv2, 'ignoro': s_inv3}
-                
-                s_s, s_e, s_r, idx = calcular_ser(datos)
-                titulo, desc = obtener_diagnostico(idx)
-                
-                # Guardar (Fecha, Email, Nombre, Score_Somatica, Score_Energia, Score_Regulacion, INDICE_TOTAL, Nivel)
-                fecha = datetime.now().strftime("%Y-%m-%d")
-                try:
-                    sheet.append_row([fecha, email_input, nombre_input, s_s, s_e, s_r, idx, titulo])
-                    st.success("✅ ¡Guardado!")
-                    st.divider()
-                    st.markdown(f"<h1 style='text-align: center; color: #8A2BE2;'>{idx} / 5.0</h1>", unsafe_allow_html=True)
-                    st.info(f"**{titulo}**\n\n{desc}")
-                    st.balloons()
-                except Exception as e:
-                    st.error(f"Error guardando: {e}")
-            elif submitted:
-                st.warning("Falta tu nombre.")
+            if submitted:
+                if not nombre_input or not check_datos:
+                    st.error("⚠️ Debes escribir tu nombre y aceptar el consentimiento de datos.")
+                else:
+                    # Empaquetar respuestas
+                    datos = {
+                        'e1': e1, 'e2': e2, 'e3': e3, 'e4': e4,
+                        'r1': r1, 'r2': r2, 'r3': r3, 'r4': r4, 'r5': r5, 'r6': r6, 'r7': r7, 'r8': r8,
+                        's1': s1, 's2': s2, 's3': s3, 's4': s4, 's5': s5, 's6': s6, 's7': s7, 's8': s8, 's9': s9,
+                        's10': s10, 's11': s11, 's12': s12, 's13': s13, 's14': s14, 's15': s15, 's16': s16, 's17': s17
+                    }
+                    
+                    s_s, s_e, s_r, idx = calcular_ser_v2(datos)
+                    titulo, desc = obtener_diagnostico(idx)
+                    
+                    # Guardar
+                    fecha = datetime.now().strftime("%Y-%m-%d")
+                    try:
+                        sheet.append_row([
+                            fecha, email_input, nombre_input, 
+                            s_s, s_e, s_r, idx, titulo, 
+                            "SÍ" if check_datos else "NO", 
+                            "SÍ" if check_imagen else "NO"
+                        ])
+                        st.success("✅ ¡Guardado!")
+                        st.balloons()
+                        st.divider()
+                        st.markdown(f"<h1 style='text-align: center; color: #8A2BE2;'>{idx} / 5.0</h1>", unsafe_allow_html=True)
+                        st.info(f"**{titulo}**\n\n{desc}")
+                    except Exception as e:
+                        st.error(f"Error guardando: {e}")
 
     # --- PESTAÑA 2: REPORTE ---
     with tab2:
         if st.button("🔄 Actualizar Reporte"): st.rerun()
         
-        # A) ENCABEZADO EDUCATIVO (TEXTO QUE PEDISTE)
-        with st.expander("ℹ️ ¿QUÉ MIDE EL ÍNDICE S.E.R.?", expanded=True):
+        with st.expander("ℹ️ GUÍA DE INTERPRETACIÓN", expanded=True):
             st.markdown("""
-            **El índice S.E.R mide lo siguiente:**
-            
-            **🧘 SOMÁTICA (Conexión / Interocepción):**
-            * **Concepto:** Es la capacidad de tu cerebro para "escuchar" las señales internas del cuerpo.
-            * **¿Qué mide?** Si habitas tu cuerpo (sientes las señales sutiles) o si vives "en tu cabeza" (desconectado hasta que duele).
-
-            **⚡ ENERGÍA (Disponibilidad Metabólica):**
-            * **Concepto:** Es tu "presupuesto" real de vitalidad.
-            * **¿Qué mide?** Diferencia entre tener energía real vs. funcionar con "adrenalina prestada" (estrés).
-
-            **🌊 REGULACIÓN (Gestión de estrés):**
-            * **Concepto:** La adaptabilidad de tu sistema nervioso.
-            * **¿Qué mide?** Tu capacidad para transitar el estrés y volver a la calma sin quedarte atorado en el pánico o el dolor.
+            **🧘 SOMÁTICA (Conexión):** Capacidad de "escuchar" las señales internas de tu cuerpo.
+            **⚡ ENERGÍA (Vitalidad):** Tu presupuesto real de vitalidad vs. estrés.
+            **🌊 REGULACIÓN (Equilibrio):** Capacidad de volver a la calma tras el estrés.
             """)
         
         try:
@@ -203,13 +226,11 @@ if email_input:
             df = pd.DataFrame(data)
             
             if not df.empty:
-                # 1. Limpieza de datos (Evitar error de lectura)
                 df.columns = [c.strip() for c in df.columns]
                 cols_num = ['Score_Somatica', 'Score_Energia', 'Score_Regulacion', 'INDICE_TOTAL']
                 for c in cols_num:
                     if c in df.columns: df[c] = pd.to_numeric(df[c], errors='coerce')
                 
-                # 2. Filtrar usuario
                 mis_datos = df[df['Email'] == email_input]
                 
                 if not mis_datos.empty:
@@ -218,63 +239,35 @@ if email_input:
                     titulo, desc = obtener_diagnostico(idx_val)
                     
                     st.divider()
-                    st.markdown("### 🎯 TU DIAGNÓSTICO ACTUAL")
-                    
-                    # KPI Principal
                     col_kpi1, col_kpi2 = st.columns([1, 2])
                     col_kpi1.markdown(f"<h1 style='text-align: center; color: #8A2BE2; font-size: 60px;'>{idx_val}</h1>", unsafe_allow_html=True)
-                    col_kpi1.caption("Escala 1.0 a 5.0")
                     col_kpi2.success(f"**{titulo}**")
                     col_kpi2.write(desc)
                     
-                    st.divider()
-                    
-                    # 3. COMPARATIVAS (GRÁFICAS INDIVIDUALES)
-                    st.markdown("### 📊 TU MAPA VS LA TRIBU")
-                    
-                    # Cálculos de promedios grupales (ignorando vacíos)
+                    # GRÁFICAS
                     p_som = df['Score_Somatica'].mean()
                     p_ene = df['Score_Energia'].mean()
                     p_reg = df['Score_Regulacion'].mean()
                     
-                    # A. RADAR GENERAL
-                    st.markdown("##### 1. Visión Global (Equilibrio)")
-                    fig_radar = graficar_radar(
-                        ultimo['Score_Somatica'], ultimo['Score_Energia'], ultimo['Score_Regulacion'],
-                        p_som, p_ene, p_reg
-                    )
+                    st.markdown("### 📊 TU MAPA VS LA TRIBU")
+                    fig_radar = graficar_radar(ultimo['Score_Somatica'], ultimo['Score_Energia'], ultimo['Score_Regulacion'], p_som, p_ene, p_reg)
                     st.plotly_chart(fig_radar, use_container_width=True)
                     
-                    # B. BARRAS INDIVIDUALES
                     c1, c2, c3 = st.columns(3)
+                    with c1: st.plotly_chart(graficar_barra_comparativa("Somática", ultimo['Score_Somatica'], p_som, "#FF69B4"), use_container_width=True)
+                    with c2: st.plotly_chart(graficar_barra_comparativa("Energía", ultimo['Score_Energia'], p_ene, "#FFD700"), use_container_width=True)
+                    with c3: st.plotly_chart(graficar_barra_comparativa("Regulación", ultimo['Score_Regulacion'], p_reg, "#00BFFF"), use_container_width=True)
                     
-                    with c1:
-                        st.markdown("**🧘 SOMÁTICA**")
-                        fig_s = graficar_barra_comparativa("Somática", ultimo['Score_Somatica'], p_som, "#FF69B4") # Rosa
-                        st.plotly_chart(fig_s, use_container_width=True)
-                        
-                    with c2:
-                        st.markdown("**⚡ ENERGÍA**")
-                        fig_e = graficar_barra_comparativa("Energía", ultimo['Score_Energia'], p_ene, "#FFD700") # Amarillo
-                        st.plotly_chart(fig_e, use_container_width=True)
-                        
-                    with c3:
-                        st.markdown("**🌊 REGULACIÓN**")
-                        fig_r = graficar_barra_comparativa("Regulación", ultimo['Score_Regulacion'], p_reg, "#00BFFF") # Azul
-                        st.plotly_chart(fig_r, use_container_width=True)
-                        
-                    # 4. EVOLUCIÓN
                     if len(mis_datos) > 1:
                         st.divider()
                         st.markdown("### 📈 TU EVOLUCIÓN")
-                        fig_line = px.line(mis_datos, x='Fecha', y='INDICE_TOTAL', markers=True, title="Histórico de tu Índice S.E.R.")
+                        fig_line = px.line(mis_datos, x='Fecha', y='INDICE_TOTAL', markers=True)
                         fig_line.update_layout(yaxis=dict(range=[1, 5.5]))
                         fig_line.update_traces(line_color='#8A2BE2', line_width=4)
                         st.plotly_chart(fig_line, use_container_width=True)
-                        
                 else:
                     st.warning("No hay registros para este correo.")
             else:
                 st.info("Base de datos vacía.")
         except Exception as e:
-            st.error(f"Error procesando el reporte: {e}")
+            st.error(f"Error procesando reporte: {e}")
