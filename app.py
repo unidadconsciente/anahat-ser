@@ -39,22 +39,20 @@ def conectar_db():
         creds_dict = dict(st.secrets["gcp_service_account"])
         creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         client = gspread.authorize(creds)
-        sheet = client.open_by_key(SHEET_ID).sheet1
+        
+        # --- CORRECCIÓN CLAVE: Abrir la pestaña por su nombre exacto ---
+        sheet = client.open_by_key(SHEET_ID).worksheet("DB_Anahat_Clientes")
         return sheet
     except Exception as e:
         st.error(f"⚠️ Error de conexión: {e}")
         st.stop()
 
 # ==========================================
-# 3. MATEMÁTICA: ESCALA 1.0 a 5.0 (LÓGICA ACTUALIZADA)
+# 3. LÓGICA MATEMÁTICA (ESCALA 1-5)
 # ==========================================
 def calcular_ser_v2(respuestas):
-    # LÓGICA:
-    # Preguntas Inversas (Síntomas): 5 es malo (siempre), 1 es bueno (nunca). 
-    # Fórmula: 6 - respuesta (Ej: Si responde 5, 6-5=1 pto. Si responde 1, 6-1=5 pts).
-    
-    # Preguntas Directas (Conexión): 5 es bueno, 1 es malo.
-    # Fórmula: respuesta tal cual.
+    # Lógica Inversa para síntomas: 6 - respuesta (5 es malo, 1 es bueno)
+    # Lógica Directa para conexión: respuesta (5 es bueno, 1 es malo)
     
     # A. ENERGÍA (4 preguntas inversas)
     raw_ene = [respuestas['e1'], respuestas['e2'], respuestas['e3'], respuestas['e4']]
@@ -99,9 +97,20 @@ def obtener_diagnostico(indice):
 # ==========================================
 def graficar_radar(val_som, val_ene, val_reg, prom_som, prom_ene, prom_reg):
     fig = go.Figure()
-    fig.add_trace(go.Scatterpolar(r=[val_som, val_ene, val_reg], theta=['SOMÁTICA', 'ENERGÍA', 'REGULACIÓN'], fill='toself', name='TÚ', line_color='#8A2BE2'))
+    # TÚ
+    fig.add_trace(go.Scatterpolar(
+        r=[val_som, val_ene, val_reg], 
+        theta=['SOMÁTICA', 'ENERGÍA', 'REGULACIÓN'], 
+        fill='toself', name='TÚ', line_color='#8A2BE2'
+    ))
+    # GRUPO
     if prom_som > 0:
-        fig.add_trace(go.Scatterpolar(r=[prom_som, prom_ene, prom_reg], theta=['SOMÁTICA', 'ENERGÍA', 'REGULACIÓN'], fill='toself', name='GRUPO', line_color='gray', opacity=0.3, line_dash='dot'))
+        fig.add_trace(go.Scatterpolar(
+            r=[prom_som, prom_ene, prom_reg], 
+            theta=['SOMÁTICA', 'ENERGÍA', 'REGULACIÓN'], 
+            fill='toself', name='GRUPO', line_color='gray', opacity=0.3, line_dash='dot'
+        ))
+    
     fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[1, 5])), showlegend=True, height=350, margin=dict(t=20, b=20, l=40, r=40))
     return fig
 
@@ -228,19 +237,17 @@ if email_input:
             
             if not df.empty:
                 # --- ARREGLO DE COLUMNAS ---
-                # 1. Quitamos espacios en blanco de los títulos (Ej: "Email " -> "Email")
                 df.columns = [c.strip() for c in df.columns]
                 
-                # 2. Si por alguna razón no encuentra 'Email', avisa pero no rompe feo
+                # Verificación estricta de columna Email (o Emali/Correo por si acaso)
                 if 'Email' not in df.columns:
-                     st.error(f"⚠️ No encuentro la columna 'Email'. Las columnas que veo son: {list(df.columns)}")
+                     st.error(f"⚠️ No encuentro la columna 'Email' en la pestaña 'DB_Anahat_Clientes'. Columnas detectadas: {list(df.columns)}")
                 else:
-                    # 3. Convertir a números las columnas de puntaje
+                    # Convertir a números
                     cols_num = ['Score_Somatica', 'Score_Energia', 'Score_Regulacion', 'INDICE_TOTAL']
                     for c in cols_num:
                         if c in df.columns: df[c] = pd.to_numeric(df[c], errors='coerce')
                     
-                    # 4. Filtrar por usuario
                     mis_datos = df[df['Email'] == email_input]
                     
                     if not mis_datos.empty:
@@ -260,14 +267,30 @@ if email_input:
                         p_reg = df['Score_Regulacion'].mean()
                         
                         st.markdown("### 📊 TU MAPA VS LA TRIBU")
-                        fig_radar = graficar_radar(ultimo['Score_Somatica'], ultimo['Score_Energia'], ultimo['Score_Regulacion'], p_som, p_ene, p_reg)
+                        
+                        # Radar
+                        fig_radar = graficar_radar(
+                            ultimo['Score_Somatica'], ultimo['Score_Energia'], ultimo['Score_Regulacion'], 
+                            p_som, p_ene, p_reg
+                        )
                         st.plotly_chart(fig_radar, use_container_width=True)
                         
+                        # Barras de Detalle
                         c1, c2, c3 = st.columns(3)
-                        with c1: st.plotly_chart(graficar_barra_comparativa("Somática", ultimo['Score_Somatica'], p_som, "#FF69B4"), use_container_width=True)
-                        with c2: st.plotly_chart(graficar_barra_comparativa("Energía", ultimo['Score_Energia'], p_ene, "#FFD700"), use_container_width=True)
-                        with c3: st.plotly_chart(graficar_barra_comparativa("Regulación", ultimo['Score_Regulacion'], p_reg, "#00BFFF"), use_container_width=True)
                         
+                        with c1: 
+                            fig_som = graficar_barra_comparativa("Somática", ultimo['Score_Somatica'], p_som, "#FF69B4")
+                            st.plotly_chart(fig_som, use_container_width=True)
+                        
+                        with c2: 
+                            fig_ene = graficar_barra_comparativa("Energía", ultimo['Score_Energia'], p_ene, "#FFD700")
+                            st.plotly_chart(fig_ene, use_container_width=True)
+                        
+                        with c3: 
+                            fig_reg = graficar_barra_comparativa("Regulación", ultimo['Score_Regulacion'], p_reg, "#00BFFF")
+                            st.plotly_chart(fig_reg, use_container_width=True)
+                        
+                        # Evolución
                         if len(mis_datos) > 1:
                             st.divider()
                             st.markdown("### 📈 TU EVOLUCIÓN")
