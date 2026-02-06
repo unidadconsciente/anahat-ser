@@ -10,18 +10,21 @@ from google.oauth2.service_account import Credentials
 # 1. CONFIGURACIÓN ESTÉTICA
 # ==========================================
 st.set_page_config(page_title="Monitor S.E.R. | Anahat", page_icon="🧘", layout="centered")
+
 st.markdown("""<style>
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     .stMetric {text-align: center;}
     .big-font {font-size:20px !important; font-weight: bold; color: #8A2BE2;}
-    .legal-text {font-size: 12px; color: #666;}
     .scale-legend {
         background-color: #e6e6fa; 
-        padding: 10px; 
-        border-radius: 5px; 
+        color: #000000 !important; 
+        padding: 15px; 
+        border-radius: 10px; 
         text-align: center; 
         font-weight: bold; 
-        margin-bottom: 20px;
+        font-size: 16px;
+        margin-bottom: 25px;
+        border: 1px solid #dcdcdc;
     }
 </style>""", unsafe_allow_html=True)
 
@@ -46,9 +49,8 @@ def conectar_db():
 # 3. LÓGICA MATEMÁTICA (1-5)
 # ==========================================
 def calcular_ser_v2(respuestas):
-    # LÓGICA:
-    # Preguntas Inversas (Síntomas): 5 es malo, 1 es bueno. -> Fórmula: 6 - respuesta
-    # Preguntas Directas (Conexión): 5 es bueno, 1 es malo. -> Fórmula: respuesta
+    # Lógica Inversa para síntomas: 6 - respuesta
+    # Lógica Directa para conexión: respuesta
     
     # A. ENERGÍA (4 preguntas inversas)
     raw_ene = [respuestas['e1'], respuestas['e2'], respuestas['e3'], respuestas['e4']]
@@ -131,16 +133,16 @@ if email_input:
         </div>
         """, unsafe_allow_html=True)
         
-        with st.form("test_ser_v2"):
+        with st.form("test_ser_final"):
             # --- SECCIÓN A: ENERGÍA ---
-            st.info("⚡ SECCIÓN A (4 preguntas)")
+            st.info("⚡ SECCIÓN A: ENERGÍA (4 preguntas)")
             e1 = st.slider("1. ¿Tienes insomnio con frecuencia?", 1, 5, 1)
             e2 = st.slider("2. ¿Tienes dificultad para concentrarte?", 1, 5, 1)
             e3 = st.slider("3. ¿Sientes falta de aire frecuentemente?", 1, 5, 1)
             e4 = st.slider("4. ¿Te dan infecciones respiratorias con frecuencia?", 1, 5, 1)
             
             # --- SECCIÓN B: REGULACIÓN ---
-            st.info("🌊 SECCIÓN B (8 preguntas)")
+            st.info("🌊 SECCIÓN B: REGULACIÓN (8 preguntas)")
             r1 = st.slider("1. ¿Sientes dolor de espalda?", 1, 5, 1)
             r2 = st.slider("2. ¿Tienes problemas estomacales?", 1, 5, 1)
             r3 = st.slider("3. ¿Experimentas ataques de pánico?", 1, 5, 1)
@@ -151,7 +153,7 @@ if email_input:
             r8 = st.slider("8. ¿Te preocupas apenas sientes una molestia?", 1, 5, 1)
             
             # --- SECCIÓN C: SOMÁTICA ---
-            st.info("🧘 SECCIÓN C (17 preguntas)")
+            st.info("🧘 SECCIÓN C: SOMÁTICA (17 preguntas)")
             s1 = st.slider("1. ¿Notas cuando te sientes incómodo en tu cuerpo?", 1, 5, 1)
             s2 = st.slider("2. ¿Notas cambios en mi respiración?", 1, 5, 1)
             s3 = st.slider("3. ¿Puedes prestar atención a tu respiración sin distraerte?", 1, 5, 1)
@@ -171,16 +173,13 @@ if email_input:
             s17 = st.slider("17. ¿Al tomar decisiones, consultas tus sensaciones corporales?", 1, 5, 1)
             
             st.divider()
-            st.markdown("### 🔒 Consentimiento")
-            nombre_input = st.text_input("Tu Nombre Completo:")
-            check_datos = st.checkbox("✅ Acepto el procesamiento de mis datos para el diagnóstico.")
-            check_imagen = st.checkbox("📸 Autorizo uso anónimo de datos para fines estadísticos.")
+            nombre_input = st.text_input("Tu Nombre Completo para el reporte:")
             
             submitted = st.form_submit_button("CALCULAR ÍNDICE")
             
             if submitted:
-                if not nombre_input or not check_datos:
-                    st.error("⚠️ Debes escribir tu nombre y aceptar el consentimiento de datos.")
+                if not nombre_input:
+                    st.error("⚠️ Por favor, escribe tu nombre para guardar el reporte.")
                 else:
                     # Empaquetar respuestas
                     datos = {
@@ -193,14 +192,12 @@ if email_input:
                     s_s, s_e, s_r, idx = calcular_ser_v2(datos)
                     titulo, desc = obtener_diagnostico(idx)
                     
-                    # Guardar
+                    # Guardar (Solo datos esenciales, sin los checks de consentimiento)
                     fecha = datetime.now().strftime("%Y-%m-%d")
                     try:
                         sheet.append_row([
                             fecha, email_input, nombre_input, 
-                            s_s, s_e, s_r, idx, titulo, 
-                            "SÍ" if check_datos else "NO", 
-                            "SÍ" if check_imagen else "NO"
+                            s_s, s_e, s_r, idx, titulo
                         ])
                         st.success("✅ ¡Guardado!")
                         st.balloons()
