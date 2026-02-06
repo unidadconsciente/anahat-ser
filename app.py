@@ -23,16 +23,23 @@ st.markdown("""<style>
         border-collapse: collapse;
         margin-bottom: 20px;
         font-size: 14px;
+        font-family: sans-serif;
     }
     .levels-table th {
         background-color: #f0f2f6;
-        padding: 8px;
+        padding: 12px;
         text-align: left;
-        border-bottom: 2px solid #ddd;
+        border-bottom: 2px solid #000; 
+        color: #000000 !important; /* TEXTO NEGRO FORZADO */
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 13px;
     }
     .levels-table td {
-        padding: 8px;
+        padding: 12px;
         border-bottom: 1px solid #eee;
+        color: #333;
+        vertical-align: top;
     }
     
     .scale-legend {
@@ -88,20 +95,20 @@ def calcular_ser_v2(respuestas):
 
 def obtener_diagnostico(indice):
     if indice < 2.0:
-        titulo = "🔴 NIVEL 1: DESCONEXIÓN (Colapso)"
-        desc = "Tu sistema está en 'ahorro de energía' extremo. Sensación de apagado o fatiga crónica."
+        titulo = "🔴 ZONA DE DESCONEXIÓN"
+        desc = "Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional."
     elif indice < 3.0:
-        titulo = "🟠 NIVEL 2: SOBREVIVENCIA (Alerta)"
-        desc = "Tu sistema está en lucha/huida. Mucha energía desregulada, ansiedad o dolor agudo."
+        titulo = "🟠 ZONA REACTIVA"
+        desc = "Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad."
     elif indice < 4.0:
-        titulo = "🟡 NIVEL 3: RESISTENCIA (Funcional)"
-        desc = "Eres funcional y productivo, pero a un costo energético alto. 'Aguantas' el estrés."
+        titulo = "🟡 MODO RESISTENCIA"
+        desc = "Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente."
     elif indice < 4.6:
-        titulo = "🟢 NIVEL 4: REGULACIÓN (Equilibrio)"
-        desc = "Tienes herramientas. Sientes el estrés pero logras volver a la calma."
+        titulo = "🟢 ZONA DE PRESENCIA"
+        desc = "Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza."
     else:
-        titulo = "🟣 NIVEL 5: COHERENCIA (Fluidez)"
-        desc = "Estado óptimo. Mente y cuerpo alineados, con energía disponible para crear."
+        titulo = "🟣 ALTA SINTERGIA"
+        desc = "Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa."
     return titulo, desc
 
 # ==========================================
@@ -189,23 +196,26 @@ def mostrar_dashboard_completo(df, email_usuario):
     # --- RENDERIZADO DEL DASHBOARD ---
     st.divider()
     
-    # 1. EDUCACIÓN
-    st.markdown("### 1. ¿Qué estoy midiendo?")
+    # 1. EDUCACIÓN (LAS 3 DIMENSIONES)
+    st.markdown("### 1. Las 3 Dimensiones del Ser")
     c1, c2, c3 = st.columns(3)
-    with c1: st.info("**🧘 SOMÁTICA**\n\nConexión: Capacidad de 'escuchar' las señales internas.")
-    with c2: st.info("**⚡ ENERGÍA**\n\nVitalidad: Presupuesto real de energía vs. estrés.")
-    with c3: st.info("**🌊 REGULACIÓN**\n\nEquilibrio: Capacidad de volver a la calma.")
+    with c1: 
+        st.info("**🧘 SOMÁTICA**\n\nEs la capacidad de tu sistema nervioso para percibir, traducir y habitar las señales internas de tu cuerpo como fuente primaria de sabiduría.")
+    with c2: 
+        st.info("**⚡ ENERGÍA**\n\nEs la cantidad de fuerza vital libre que tienes disponible para crear, expandirte y sostener tu propósito con claridad.")
+    with c3: 
+        st.info("**🌊 REGULACIÓN**\n\nEs tu capacidad biológica para transitar los retos de la vida y retornar a la seguridad, al centro y al equilibrio de forma natural.")
 
     # 2. CONTEXTO (TABLA DE NIVELES)
-    st.markdown("### 2. Escala de Niveles")
+    st.markdown("### 2. Los 5 Estados del Ser")
     st.markdown("""
     <table class="levels-table">
       <tr><th>Nivel</th><th>Estado</th><th>Descripción</th></tr>
-      <tr><td>🟣 4.6 - 5.0</td><td><b>COHERENCIA</b></td><td>Estado óptimo. Fluidez y creatividad.</td></tr>
-      <tr><td>🟢 4.0 - 4.5</td><td><b>REGULACIÓN</b></td><td>Equilibrio. Tienes herramientas para gestionar el estrés.</td></tr>
-      <tr><td>🟡 3.0 - 3.9</td><td><b>RESISTENCIA</b></td><td>Funcional pero costoso. "Aguantas" mucho.</td></tr>
-      <tr><td>🟠 2.0 - 2.9</td><td><b>SOBREVIVENCIA</b></td><td>Alerta máxima. Ansiedad, dolor o reactividad.</td></tr>
-      <tr><td>🔴 1.0 - 1.9</td><td><b>DESCONEXIÓN</b></td><td>Colapso. Fatiga crónica o "apagado".</td></tr>
+      <tr><td>🟣 4.6 - 5.0</td><td><b>ALTA SINTERGIA</b></td><td>Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa.</td></tr>
+      <tr><td>🟢 4.0 - 4.5</td><td><b>ZONA DE PRESENCIA</b></td><td>Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza.</td></tr>
+      <tr><td>🟡 3.0 - 3.9</td><td><b>MODO RESISTENCIA</b></td><td>Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente.</td></tr>
+      <tr><td>🟠 2.0 - 2.9</td><td><b>ZONA REACTIVA</b></td><td>Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad.</td></tr>
+      <tr><td>🔴 1.0 - 1.9</td><td><b>ZONA DE DESCONEXIÓN</b></td><td>Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional.</td></tr>
     </table>
     """, unsafe_allow_html=True)
 
