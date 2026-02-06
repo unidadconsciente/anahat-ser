@@ -46,11 +46,15 @@ def conectar_db():
         st.stop()
 
 # ==========================================
-# 3. LÓGICA MATEMÁTICA (1-5)
+# 3. MATEMÁTICA: ESCALA 1.0 a 5.0 (LÓGICA ACTUALIZADA)
 # ==========================================
 def calcular_ser_v2(respuestas):
-    # Lógica Inversa para síntomas: 6 - respuesta
-    # Lógica Directa para conexión: respuesta
+    # LÓGICA:
+    # Preguntas Inversas (Síntomas): 5 es malo (siempre), 1 es bueno (nunca). 
+    # Fórmula: 6 - respuesta (Ej: Si responde 5, 6-5=1 pto. Si responde 1, 6-1=5 pts).
+    
+    # Preguntas Directas (Conexión): 5 es bueno, 1 es malo.
+    # Fórmula: respuesta tal cual.
     
     # A. ENERGÍA (4 preguntas inversas)
     raw_ene = [respuestas['e1'], respuestas['e2'], respuestas['e3'], respuestas['e4']]
@@ -133,7 +137,7 @@ if email_input:
         </div>
         """, unsafe_allow_html=True)
         
-        with st.form("test_ser_final"):
+        with st.form("test_ser_v2"):
             # --- SECCIÓN A: ENERGÍA ---
             st.info("⚡ SECCIÓN A: ENERGÍA (4 preguntas)")
             e1 = st.slider("1. ¿Tienes insomnio con frecuencia?", 1, 5, 1)
@@ -192,7 +196,7 @@ if email_input:
                     s_s, s_e, s_r, idx = calcular_ser_v2(datos)
                     titulo, desc = obtener_diagnostico(idx)
                     
-                    # Guardar (Solo datos esenciales, sin los checks de consentimiento)
+                    # Guardar (Fecha, Email, Nombre, Scores..., Indice, Nivel)
                     fecha = datetime.now().strftime("%Y-%m-%d")
                     try:
                         sheet.append_row([
@@ -223,48 +227,41 @@ if email_input:
             df = pd.DataFrame(data)
             
             if not df.empty:
+                # --- ARREGLO DE COLUMNAS ---
+                # 1. Quitamos espacios en blanco de los títulos (Ej: "Email " -> "Email")
                 df.columns = [c.strip() for c in df.columns]
-                cols_num = ['Score_Somatica', 'Score_Energia', 'Score_Regulacion', 'INDICE_TOTAL']
-                for c in cols_num:
-                    if c in df.columns: df[c] = pd.to_numeric(df[c], errors='coerce')
                 
-                mis_datos = df[df['Email'] == email_input]
-                
-                if not mis_datos.empty:
-                    ultimo = mis_datos.iloc[-1]
-                    idx_val = ultimo.get('INDICE_TOTAL', 0)
-                    titulo, desc = obtener_diagnostico(idx_val)
-                    
-                    st.divider()
-                    col_kpi1, col_kpi2 = st.columns([1, 2])
-                    col_kpi1.markdown(f"<h1 style='text-align: center; color: #8A2BE2; font-size: 60px;'>{idx_val}</h1>", unsafe_allow_html=True)
-                    col_kpi2.success(f"**{titulo}**")
-                    col_kpi2.write(desc)
-                    
-                    # GRÁFICAS
-                    p_som = df['Score_Somatica'].mean()
-                    p_ene = df['Score_Energia'].mean()
-                    p_reg = df['Score_Regulacion'].mean()
-                    
-                    st.markdown("### 📊 TU MAPA VS LA TRIBU")
-                    fig_radar = graficar_radar(ultimo['Score_Somatica'], ultimo['Score_Energia'], ultimo['Score_Regulacion'], p_som, p_ene, p_reg)
-                    st.plotly_chart(fig_radar, use_container_width=True)
-                    
-                    c1, c2, c3 = st.columns(3)
-                    with c1: st.plotly_chart(graficar_barra_comparativa("Somática", ultimo['Score_Somatica'], p_som, "#FF69B4"), use_container_width=True)
-                    with c2: st.plotly_chart(graficar_barra_comparativa("Energía", ultimo['Score_Energia'], p_ene, "#FFD700"), use_container_width=True)
-                    with c3: st.plotly_chart(graficar_barra_comparativa("Regulación", ultimo['Score_Regulacion'], p_reg, "#00BFFF"), use_container_width=True)
-                    
-                    if len(mis_datos) > 1:
-                        st.divider()
-                        st.markdown("### 📈 TU EVOLUCIÓN")
-                        fig_line = px.line(mis_datos, x='Fecha', y='INDICE_TOTAL', markers=True)
-                        fig_line.update_layout(yaxis=dict(range=[1, 5.5]))
-                        fig_line.update_traces(line_color='#8A2BE2', line_width=4)
-                        st.plotly_chart(fig_line, use_container_width=True)
+                # 2. Si por alguna razón no encuentra 'Email', avisa pero no rompe feo
+                if 'Email' not in df.columns:
+                     st.error(f"⚠️ No encuentro la columna 'Email'. Las columnas que veo son: {list(df.columns)}")
                 else:
-                    st.warning("No hay registros para este correo.")
-            else:
-                st.info("Base de datos vacía.")
-        except Exception as e:
-            st.error(f"Error procesando reporte: {e}")
+                    # 3. Convertir a números las columnas de puntaje
+                    cols_num = ['Score_Somatica', 'Score_Energia', 'Score_Regulacion', 'INDICE_TOTAL']
+                    for c in cols_num:
+                        if c in df.columns: df[c] = pd.to_numeric(df[c], errors='coerce')
+                    
+                    # 4. Filtrar por usuario
+                    mis_datos = df[df['Email'] == email_input]
+                    
+                    if not mis_datos.empty:
+                        ultimo = mis_datos.iloc[-1]
+                        idx_val = ultimo.get('INDICE_TOTAL', 0)
+                        titulo, desc = obtener_diagnostico(idx_val)
+                        
+                        st.divider()
+                        col_kpi1, col_kpi2 = st.columns([1, 2])
+                        col_kpi1.markdown(f"<h1 style='text-align: center; color: #8A2BE2; font-size: 60px;'>{idx_val}</h1>", unsafe_allow_html=True)
+                        col_kpi2.success(f"**{titulo}**")
+                        col_kpi2.write(desc)
+                        
+                        # GRÁFICAS
+                        p_som = df['Score_Somatica'].mean()
+                        p_ene = df['Score_Energia'].mean()
+                        p_reg = df['Score_Regulacion'].mean()
+                        
+                        st.markdown("### 📊 TU MAPA VS LA TRIBU")
+                        fig_radar = graficar_radar(ultimo['Score_Somatica'], ultimo['Score_Energia'], ultimo['Score_Regulacion'], p_som, p_ene, p_reg)
+                        st.plotly_chart(fig_radar, use_container_width=True)
+                        
+                        c1, c2, c3 = st.columns(3)
+                        with c1: st.plotly_chart(graficar_barra_comparativa("Somática", ultimo['Score
