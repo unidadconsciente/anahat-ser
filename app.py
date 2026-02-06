@@ -264,4 +264,20 @@ if email_input:
                         st.plotly_chart(fig_radar, use_container_width=True)
                         
                         c1, c2, c3 = st.columns(3)
-                        with c1: st.plotly_chart(graficar_barra_comparativa("Somática", ultimo['Score
+                        with c1: st.plotly_chart(graficar_barra_comparativa("Somática", ultimo['Score_Somatica'], p_som, "#FF69B4"), use_container_width=True)
+                        with c2: st.plotly_chart(graficar_barra_comparativa("Energía", ultimo['Score_Energia'], p_ene, "#FFD700"), use_container_width=True)
+                        with c3: st.plotly_chart(graficar_barra_comparativa("Regulación", ultimo['Score_Regulacion'], p_reg, "#00BFFF"), use_container_width=True)
+                        
+                        if len(mis_datos) > 1:
+                            st.divider()
+                            st.markdown("### 📈 TU EVOLUCIÓN")
+                            fig_line = px.line(mis_datos, x='Fecha', y='INDICE_TOTAL', markers=True)
+                            fig_line.update_layout(yaxis=dict(range=[1, 5.5]))
+                            fig_line.update_traces(line_color='#8A2BE2', line_width=4)
+                            st.plotly_chart(fig_line, use_container_width=True)
+                    else:
+                        st.warning("No hay registros para este correo.")
+            else:
+                st.info("Base de datos vacía.")
+        except Exception as e:
+            st.error(f"Error procesando reporte: {e}")
