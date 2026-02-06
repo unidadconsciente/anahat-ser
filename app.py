@@ -3,12 +3,12 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
-import pytz # Zona horaria
+import pytz # Zona horaria CDMX
 import gspread
 from google.oauth2.service_account import Credentials
 
 # ==========================================
-# 1. CONFIGURACIÓN ESTÉTICA
+# 1. CONFIGURACIÓN ESTÉTICA Y BRANDING
 # ==========================================
 st.set_page_config(page_title="Monitor S.E.R. | Anahat", page_icon="🧘", layout="centered")
 
@@ -16,6 +16,25 @@ st.markdown("""<style>
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     .stMetric {text-align: center;}
     .big-font {font-size:20px !important; font-weight: bold; color: #8A2BE2;}
+    
+    /* Estilo para la Tabla de Niveles */
+    .levels-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+    .levels-table th {
+        background-color: #f0f2f6;
+        padding: 8px;
+        text-align: left;
+        border-bottom: 2px solid #ddd;
+    }
+    .levels-table td {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+    }
+    
     .scale-legend {
         background-color: #e6e6fa; 
         color: #000000 !important; 
@@ -132,7 +151,7 @@ def graficar_barra_comparativa(titulo, valor_usuario, valor_grupo, color_barra):
     return fig
 
 # ==========================================
-# 5. FUNCIÓN CENTRAL DE DASHBOARD
+# 5. DASHBOARD DE RESULTADOS (STORYTELLING)
 # ==========================================
 def mostrar_dashboard_completo(df, email_usuario):
     # 1. Limpieza de columnas
@@ -170,7 +189,28 @@ def mostrar_dashboard_completo(df, email_usuario):
     # --- RENDERIZADO DEL DASHBOARD ---
     st.divider()
     
-    # KPI Principal
+    # 1. EDUCACIÓN
+    st.markdown("### 1. ¿Qué estoy midiendo?")
+    c1, c2, c3 = st.columns(3)
+    with c1: st.info("**🧘 SOMÁTICA**\n\nConexión: Capacidad de 'escuchar' las señales internas.")
+    with c2: st.info("**⚡ ENERGÍA**\n\nVitalidad: Presupuesto real de energía vs. estrés.")
+    with c3: st.info("**🌊 REGULACIÓN**\n\nEquilibrio: Capacidad de volver a la calma.")
+
+    # 2. CONTEXTO (TABLA DE NIVELES)
+    st.markdown("### 2. Escala de Niveles")
+    st.markdown("""
+    <table class="levels-table">
+      <tr><th>Nivel</th><th>Estado</th><th>Descripción</th></tr>
+      <tr><td>🟣 4.6 - 5.0</td><td><b>COHERENCIA</b></td><td>Estado óptimo. Fluidez y creatividad.</td></tr>
+      <tr><td>🟢 4.0 - 4.5</td><td><b>REGULACIÓN</b></td><td>Equilibrio. Tienes herramientas para gestionar el estrés.</td></tr>
+      <tr><td>🟡 3.0 - 3.9</td><td><b>RESISTENCIA</b></td><td>Funcional pero costoso. "Aguantas" mucho.</td></tr>
+      <tr><td>🟠 2.0 - 2.9</td><td><b>SOBREVIVENCIA</b></td><td>Alerta máxima. Ansiedad, dolor o reactividad.</td></tr>
+      <tr><td>🔴 1.0 - 1.9</td><td><b>DESCONEXIÓN</b></td><td>Colapso. Fatiga crónica o "apagado".</td></tr>
+    </table>
+    """, unsafe_allow_html=True)
+
+    # 3. KPI Principal
+    st.markdown("### 3. Tu Diagnóstico Actual")
     col_kpi1, col_kpi2 = st.columns([1, 2])
     with col_kpi1:
         st.markdown(f"<h1 style='text-align: center; color: #8A2BE2; font-size: 60px; margin-bottom: 0px;'>{idx_val}</h1>", unsafe_allow_html=True)
@@ -180,7 +220,8 @@ def mostrar_dashboard_completo(df, email_usuario):
         st.success(f"**{titulo}**")
         st.write(desc)
     
-    st.markdown("### 📊 TU MAPA VS LA COMUNIDAD")
+    # 4. GRÁFICAS
+    st.markdown("### 4. Tu Mapa vs La Comunidad")
     
     # Radar
     fig_radar = graficar_radar(
@@ -190,16 +231,10 @@ def mostrar_dashboard_completo(df, email_usuario):
     st.plotly_chart(fig_radar, use_container_width=True)
     
     # Barras
-    c1, c2, c3 = st.columns(3)
-    with c1: 
-        fig_som = graficar_barra_comparativa("Somática", ultimo['Score_Somatica'], p_som, "#FF69B4")
-        st.plotly_chart(fig_som, use_container_width=True)
-    with c2: 
-        fig_ene = graficar_barra_comparativa("Energía", ultimo['Score_Energia'], p_ene, "#FFD700")
-        st.plotly_chart(fig_ene, use_container_width=True)
-    with c3: 
-        fig_reg = graficar_barra_comparativa("Regulación", ultimo['Score_Regulacion'], p_reg, "#00BFFF")
-        st.plotly_chart(fig_reg, use_container_width=True)
+    gc1, gc2, gc3 = st.columns(3)
+    with gc1: st.plotly_chart(graficar_barra_comparativa("Somática", ultimo['Score_Somatica'], p_som, "#FF69B4"), use_container_width=True)
+    with gc2: st.plotly_chart(graficar_barra_comparativa("Energía", ultimo['Score_Energia'], p_ene, "#FFD700"), use_container_width=True)
+    with gc3: st.plotly_chart(graficar_barra_comparativa("Regulación", ultimo['Score_Regulacion'], p_reg, "#00BFFF"), use_container_width=True)
     
     # Evolución
     if len(mis_datos) > 1:
@@ -213,107 +248,108 @@ def mostrar_dashboard_completo(df, email_usuario):
 # ==========================================
 # 6. APP PRINCIPAL
 # ==========================================
-st.title("👁️ Tu Monitor S.E.R.")
+# st.image("logo.png", width=150) # Descomentar cuando tengas el logo
+
+# --- ENCABEZADO TIPO MEMBRETE ---
+st.markdown("<h4 style='text-align: left; color: gray;'>Unidad Consciente</h4>", unsafe_allow_html=True)
+
+# --- TÍTULO PRINCIPAL ---
+st.title("Índice S.E.R. (Somática, Energía, Regulación) | Comunidad Anahat")
 
 try: sheet = conectar_db()
 except: pass
 
-email_input = st.text_input("Ingresa tu correo registrado para iniciar:").strip().lower()
-
-if email_input:
-    # --- FORMULARIO Y REPORTE EN LA MISMA PESTAÑA ---
+# --- INICIO DEL FORMULARIO ---
+with st.form("test_ser_v2"):
+    
+    # 1. NOMBRE (Primero)
+    nombre_input = st.text_input("Tu Nombre Completo:")
+    
     st.markdown("""
     <div class="scale-legend">
     ESCALA: 1 = Nunca | 2 = Casi nunca | 3 = A veces | 4 = Frecuentemente | 5 = Siempre
     </div>
     """, unsafe_allow_html=True)
     
-    with st.form("test_ser_v2"):
-        # --- SECCIÓN A ---
-        st.info("⚡ ENERGÍA")
-        e1 = st.slider("1. ¿Tienes insomnio con frecuencia?", 1, 5, 1)
-        e2 = st.slider("2. ¿Tienes dificultad para concentrarte?", 1, 5, 1)
-        e3 = st.slider("3. ¿Sientes falta de aire frecuentemente?", 1, 5, 1)
-        e4 = st.slider("4. ¿Te dan infecciones respiratorias con frecuencia?", 1, 5, 1)
-        
-        # --- SECCIÓN B ---
-        st.info("🌊 REGULACIÓN")
-        r1 = st.slider("1. ¿Sientes dolor de espalda?", 1, 5, 1)
-        r2 = st.slider("2. ¿Tienes problemas estomacales?", 1, 5, 1)
-        r3 = st.slider("3. ¿Experimentas ataques de pánico?", 1, 5, 1)
-        r4 = st.slider("4. ¿Tienes dolores de cabeza?", 1, 5, 1)
-        r5 = st.slider("5. ¿Suspiras frecuentemente?", 1, 5, 1)
-        r6 = st.slider("6. ¿Ignoras la tensión física hasta que es severa?", 1, 5, 1)
-        r7 = st.slider("7. ¿Te distraes de las sensaciones de malestar?", 1, 5, 1)
-        r8 = st.slider("8. ¿Te preocupas apenas sientes una molestia?", 1, 5, 1)
-        
-        # --- SECCIÓN C ---
-        st.info("🧘 SOMÁTICA")
-        s1 = st.slider("1. ¿Notas cuando te sientes incómodo en tu cuerpo?", 1, 5, 1)
-        s2 = st.slider("2. ¿Notas cambios en mi respiración?", 1, 5, 1)
-        s3 = st.slider("3. ¿Puedes prestar atención a tu respiración sin distraerte?", 1, 5, 1)
-        s4 = st.slider("4. ¿Puedes mantener consciencia interna aunque haya movimiento alrededor?", 1, 5, 1)
-        s5 = st.slider("5. ¿Al conversar, puedes prestar atención a tu postura?", 1, 5, 1)
-        s6 = st.slider("6. ¿Puedes volver a concentrarte en tu cuerpo si te distraes?", 1, 5, 1)
-        s7 = st.slider("7. ¿Puedes redirigir tu atención de pensamientos a sensaciones?", 1, 5, 1)
-        s8 = st.slider("8. ¿Mantienes consciencia del cuerpo aunque una parte duela?", 1, 5, 1)
-        s9 = st.slider("9. ¿Eres capaz de enfocarte en tu cuerpo como un todo?", 1, 5, 1)
-        s10 = st.slider("10. ¿Notas cómo cambia tu cuerpo cuando estás enojado?", 1, 5, 1)
-        s11 = st.slider("11. ¿Notas que tu cuerpo se siente diferente tras una experiencia pacífica?", 1, 5, 1)
-        s12 = st.slider("12. ¿Notas que tu respiración se libera cuando estás cómodo?", 1, 5, 1)
-        s13 = st.slider("13. ¿Al sentirte abrumado, encuentras un lugar de calma dentro de ti?", 1, 5, 1)
-        s14 = st.slider("14. ¿Al sentirte tenso, usas tu respiración para reducir tensión?", 1, 5, 1)
-        s15 = st.slider("15. ¿Cuando estás estresado, sabes relajarte físicamente?", 1, 5, 1)
-        s16 = st.slider("16. ¿Respetas lo que tu cuerpo pide (descanso, comida)?", 1, 5, 1)
-        s17 = st.slider("17. ¿Al tomar decisiones, consultas tus sensaciones corporales?", 1, 5, 1)
-        
-        st.divider()
-        nombre_input = st.text_input("Tu Nombre Completo para el reporte:")
-        
-        submitted = st.form_submit_button("CALCULAR ÍNDICE")
-        
-        if submitted:
-            if not nombre_input:
-                st.error("⚠️ Por favor, escribe tu nombre para guardar el reporte.")
-            else:
-                datos = {
-                    'e1': e1, 'e2': e2, 'e3': e3, 'e4': e4,
-                    'r1': r1, 'r2': r2, 'r3': r3, 'r4': r4, 'r5': r5, 'r6': r6, 'r7': r7, 'r8': r8,
-                    's1': s1, 's2': s2, 's3': s3, 's4': s4, 's5': s5, 's6': s6, 's7': s7, 's8': s8, 's9': s9,
-                    's10': s10, 's11': s11, 's12': s12, 's13': s13, 's14': s14, 's15': s15, 's16': s16, 's17': s17
-                }
-                
-                s_s, s_e, s_r, idx = calcular_ser_v2(datos)
-                titulo, desc = obtener_diagnostico(idx)
-                
-                # Zona Horaria México
-                zona_mx = pytz.timezone('America/Mexico_City')
-                fecha = datetime.now(zona_mx).strftime("%Y-%m-%d")
-                
-                try:
-                    sheet.append_row([
-                        fecha, email_input, nombre_input, 
-                        s_s, s_e, s_r, idx, titulo
-                    ])
-                    st.success("✅ ¡Guardado!")
-                    st.balloons()
-                    
-                except Exception as e:
-                    st.error(f"Error guardando: {e}")
+    # 2. PREGUNTAS
+    st.info("⚡ ENERGÍA")
+    e1 = st.slider("1. ¿Tienes insomnio con frecuencia?", 1, 5, 1)
+    e2 = st.slider("2. ¿Tienes dificultad para concentrarte?", 1, 5, 1)
+    e3 = st.slider("3. ¿Sientes falta de aire frecuentemente?", 1, 5, 1)
+    e4 = st.slider("4. ¿Te dan infecciones respiratorias con frecuencia?", 1, 5, 1)
+    
+    st.info("🌊 REGULACIÓN")
+    r1 = st.slider("1. ¿Sientes dolor de espalda?", 1, 5, 1)
+    r2 = st.slider("2. ¿Tienes problemas estomacales?", 1, 5, 1)
+    r3 = st.slider("3. ¿Experimentas ataques de pánico?", 1, 5, 1)
+    r4 = st.slider("4. ¿Tienes dolores de cabeza?", 1, 5, 1)
+    r5 = st.slider("5. ¿Suspiras frecuentemente?", 1, 5, 1)
+    r6 = st.slider("6. ¿Ignoras la tensión física hasta que es severa?", 1, 5, 1)
+    r7 = st.slider("7. ¿Te distraes de las sensaciones de malestar?", 1, 5, 1)
+    r8 = st.slider("8. ¿Te preocupas apenas sientes una molestia?", 1, 5, 1)
+    
+    st.info("🧘 SOMÁTICA")
+    s1 = st.slider("1. ¿Notas cuando te sientes incómodo en tu cuerpo?", 1, 5, 1)
+    s2 = st.slider("2. ¿Notas cambios en mi respiración?", 1, 5, 1)
+    s3 = st.slider("3. ¿Puedes prestar atención a tu respiración sin distraerte?", 1, 5, 1)
+    s4 = st.slider("4. ¿Puedes mantener consciencia interna aunque haya movimiento alrededor?", 1, 5, 1)
+    s5 = st.slider("5. ¿Al conversar, puedes prestar atención a tu postura?", 1, 5, 1)
+    s6 = st.slider("6. ¿Puedes volver a concentrarte en tu cuerpo si te distraes?", 1, 5, 1)
+    s7 = st.slider("7. ¿Puedes redirigir tu atención de pensamientos a sensaciones?", 1, 5, 1)
+    s8 = st.slider("8. ¿Mantienes consciencia del cuerpo aunque una parte duela?", 1, 5, 1)
+    s9 = st.slider("9. ¿Eres capaz de enfocarte en tu cuerpo como un todo?", 1, 5, 1)
+    s10 = st.slider("10. ¿Notas cómo cambia tu cuerpo cuando estás enojado?", 1, 5, 1)
+    s11 = st.slider("11. ¿Notas que tu cuerpo se siente diferente tras una experiencia pacífica?", 1, 5, 1)
+    s12 = st.slider("12. ¿Notas que tu respiración se libera cuando estás cómodo?", 1, 5, 1)
+    s13 = st.slider("13. ¿Al sentirte abrumado, encuentras un lugar de calma dentro de ti?", 1, 5, 1)
+    s14 = st.slider("14. ¿Al sentirte tenso, usas tu respiración para reducir tensión?", 1, 5, 1)
+    s15 = st.slider("15. ¿Cuando estás estresado, sabes relajarte físicamente?", 1, 5, 1)
+    s16 = st.slider("16. ¿Respetas lo que tu cuerpo pide (descanso, comida)?", 1, 5, 1)
+    s17 = st.slider("17. ¿Al tomar decisiones, consultas tus sensaciones corporales?", 1, 5, 1)
+    
+    st.divider()
+    
+    # 3. CORREO (Al final)
+    email_input = st.text_input("Tu Correo Electrónico (Para guardar tu historial):").strip().lower()
+    
+    submitted = st.form_submit_button("CALCULAR ÍNDICE")
+    
+    if submitted:
+        if not nombre_input or not email_input:
+            st.error("⚠️ Por favor ingresa tu Nombre y Correo para ver tus resultados.")
+        else:
+            # Cálculos
+            datos = {
+                'e1': e1, 'e2': e2, 'e3': e3, 'e4': e4,
+                'r1': r1, 'r2': r2, 'r3': r3, 'r4': r4, 'r5': r5, 'r6': r6, 'r7': r7, 'r8': r8,
+                's1': s1, 's2': s2, 's3': s3, 's4': s4, 's5': s5, 's6': s6, 's7': s7, 's8': s8, 's9': s9,
+                's10': s10, 's11': s11, 's12': s12, 's13': s13, 's14': s14, 's15': s15, 's16': s16, 's17': s17
+            }
+            
+            s_s, s_e, s_r, idx = calcular_ser_v2(datos)
+            titulo, desc = obtener_diagnostico(idx)
+            
+            # Zona Horaria México
+            zona_mx = pytz.timezone('America/Mexico_City')
+            fecha = datetime.now(zona_mx).strftime("%Y-%m-%d")
+            
+            # Guardar en Sheet
+            try:
+                sheet.append_row([
+                    fecha, email_input, nombre_input, 
+                    s_s, s_e, s_r, idx, titulo
+                ])
+                st.toast("✅ Datos guardados con éxito")
+            except Exception as e:
+                st.error(f"Error guardando: {e}")
 
-    # --- MOSTRAR REPORTE INMEDIATAMENTE SI YA HAY DATOS ---
+# --- MOSTRAR REPORTE INMEDIATAMENTE SI YA HAY DATOS ---
+if email_input:
     try:
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
         if not df.empty:
             mostrar_dashboard_completo(df, email_input)
     except Exception as e:
-        # Silencioso al inicio si no hay conexión
+        # Silencioso si no hay conexión o datos
         pass
-
-    # --- PESTAÑA EXTRA SOLO POR SI QUIEREN VER HISTORIAL LIMPIO ---
-    with st.expander("📂 VER HISTORIAL DE MEDICIONES (Opcional)"):
-         try:
-            if 'df' in locals() and not df.empty:
-                 mostrar_dashboard_completo(df, email_input)
-         except: pass
