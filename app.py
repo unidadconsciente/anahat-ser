@@ -30,7 +30,7 @@ st.markdown("""<style>
         padding: 12px;
         text-align: left;
         border-bottom: 2px solid #000; 
-        color: #000000 !important; /* TEXTO NEGRO FORZADO */
+        color: #000000 !important; /* TEXTO NEGRO FORZADO EN ENCABEZADOS */
         font-weight: bold;
         text-transform: uppercase;
         font-size: 13px;
@@ -38,7 +38,7 @@ st.markdown("""<style>
     .levels-table td {
         padding: 12px;
         border-bottom: 1px solid #eee;
-        color: #333;
+        color: #FFFFFF !important; /* CAMBIO A BLANCO PARA EL TEXTO DEL CUERPO */
         vertical-align: top;
     }
     
