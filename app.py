@@ -463,20 +463,34 @@ if modo == "📝 Índice S.E.R.":
     if st.session_state.resultado_listo:
         nombre, s, e, r, idx, tit, desc = st.session_state.res_datos
         
-        st.markdown("### 🗺️ Mapa de Niveles S.E.R.")
+       st.markdown("### 🗺️ Mapa de Niveles S.E.R.")
         
-        # TABLA CON ESTILO INLINE FORZADO PARA QUE SE VEA BLANCO
         st.markdown(f"""
         <table class="levels-table">
           <tr>
-            <th style="background-color:{COLOR_MORADO};"><span style="color: white !important;">Nivel</span></th>
-            <th style="background-color:{COLOR_MORADO};"><span style="color: white !important;">Descripción</span></th>
+            <th style="background-color:{COLOR_MORADO}; color: white !important;"><span style="color: white !important;">Nivel</span></th>
+            <th style="background-color:{COLOR_MORADO}; color: white !important;"><span style="color: white !important;">Descripción</span></th>
           </tr>
-          <tr><td>🟣 ALTA SINTERGIA<br>(4.6 - 5.0)</td><td>Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos.</td></tr>
-          <tr><td>🟢 ZONA DE PRESENCIA<br>(4.0 - 4.5)</td><td>Posees la flexibilidad interna para sentir la intensidad de la vida y retornar a tu centro.</td></tr>
-          <tr><td>🟡 MODO RESISTENCIA<br>(3.0 - 3.9)</td><td>Funcionalidad a través del esfuerzo y tensión sostenida.</td></tr>
-          <tr><td>🟠 ZONA REACTIVA<br>(2.0 - 2.9)</td><td>Química de defensa y alerta perpetua.</td></tr>
-          <tr><td>🔴 ZONA DE DESCONEXIÓN<br>(1.0 - 1.9)</td><td>Estado profundo de Burnout. Inmovilización para preservar la vida.</td></tr>
+          <tr>
+            <td>🟣 <b>ALTA SINTERGIA</b><br>(4.6 - 5.0)</td>
+            <td>Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos. Tienes una capacidad innata para volver al centro con total facilidad ante cualquier estímulo.</td>
+          </tr>
+          <tr>
+            <td>🟢 <b>ZONA DE PRESENCIA</b><br>(4.0 - 4.5)</td>
+            <td>Posees la flexibilidad interna para sentir la intensidad de la vida y retornar a tu centro mediante la práctica consciente, como la meditación o la respiración.</td>
+          </tr>
+          <tr>
+            <td>🟡 <b>MODO RESISTENCIA</b><br>(3.0 - 3.9)</td>
+            <td>Tu sistema funciona mediante esfuerzo y tensión sostenida. Hay signos de agotamiento, pero todavía conservas la capacidad de regresar al equilibrio con descanso.</td>
+          </tr>
+          <tr>
+            <td>🟠 <b>ZONA REACTIVA</b><br>(2.0 - 2.9)</td>
+            <td>Química de defensa y alerta perpetua. El sistema está tan saturado que comienza a ser difícil regresar al centro, predominando la reacción sobre la consciencia.</td>
+          </tr>
+          <tr>
+            <td>🔴 <b>ZONA DE DESCONEXIÓN</b><br>(1.0 - 1.9)</td>
+            <td>Estado profundo de Burnout y sobreactivación constante. La autorregulación está comprometida y es muy probable que se necesite ayuda profesional para recuperar el equilibrio.</td>
+          </tr>
         </table>
         """, unsafe_allow_html=True)
         
