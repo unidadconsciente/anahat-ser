@@ -112,21 +112,27 @@ def conectar_db():
         client = gspread.authorize(creds)
 
         return client.open_by_key(ID_SHEET)
-
     except Exception:
         return None
 
-
+@st.cache_data(ttl=60)
+def obtener_datos_comunidad():
+    try:
+        client = conectar_db()
+        if not client:
+            return pd.DataFrame()
+        ws = client.worksheet("DB_Anahat_Clientes")
+        records = ws.get_all_records()
+        return pd.DataFrame(records)
+    except Exception:
+        return pd.DataFrame()
 
 def verificar_privacidad(email):
-
     df = obtener_datos_comunidad()
-
     if df.empty:
         return False
 
     df.columns = df.columns.str.strip()
-
     if 'Email' not in df.columns or 'Privacidad_Aceptada' not in df.columns:
         return False
 
@@ -143,18 +149,10 @@ def verificar_privacidad(email):
         .str.upper()
         .str.startswith('S')
     ]
-
-    if not aceptados.empty:
-        return True
-
-    return False
-
-
+    return not aceptados.empty
 
 def guardar_completo(datos):
-
     client = conectar_db()
-
     if client:
         try:
             ws = client.worksheet("DB_Anahat_Clientes")
@@ -162,11 +160,7 @@ def guardar_completo(datos):
             return True
         except:
             return False
-
     return False
-
-
-
 
 @st.cache_data(ttl=60)
 def obtener_videos():
@@ -189,7 +183,6 @@ def obtener_videos():
             df = df.sort_values(by='Fecha', ascending=False)
 
         return df
-
     except Exception:
         return pd.DataFrame()
 
