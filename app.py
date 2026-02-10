@@ -28,15 +28,29 @@ st.markdown("""
     /* Título Principal */
     h1 {color: #4B0082; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; text-align: center;}
     
-    /* Estilos de Tablas de Niveles (Recuperado del diseño anterior) */
-    .levels-table {width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;}
-    .levels-table th {background-color: #f0f2f6; padding: 10px; border-bottom: 2px solid #4B0082; color: #4B0082;}
-    .levels-table td {padding: 10px; border-bottom: 1px solid #eee;}
+    /* Estilos de Tablas de Niveles */
+    .levels-table {width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; font-family: sans-serif;}
+    .levels-table th {background-color: #f0f2f6; padding: 12px; border-bottom: 2px solid #4B0082; color: #4B0082; text-align: left;}
+    .levels-table td {padding: 12px; border-bottom: 1px solid #eee; vertical-align: top;}
+    .level-desc {color: #333;}
     
     /* KPI Grande */
     .big-score {font-size: 48px; font-weight: bold; color: #4B0082; text-align: center;}
     .kpi-label {font-size: 16px; color: gray; text-align: center; text-transform: uppercase; letter-spacing: 1px;}
     
+    /* Escala Visual */
+    .scale-guide {
+        background-color: #f8f9fa; 
+        color: #333; 
+        padding: 15px; 
+        border-radius: 5px; 
+        text-align: center; 
+        font-weight: 600; 
+        margin-bottom: 20px;
+        border-left: 5px solid #4B0082;
+        font-size: 14px;
+    }
+
     /* Botones */
     .stButton>button {
         border-radius: 20px; background-color: white; 
@@ -61,23 +75,16 @@ def conectar_db():
         return None
 
 def obtener_datos_comunidad():
-    """Trae todos los datos para calcular promedios"""
     client = conectar_db()
     if client:
         try:
             ws = client.worksheet("DB_Anahat_Clientes")
             records = ws.get_all_records()
             df = pd.DataFrame(records)
-            # Limpieza de columnas
             df.columns = df.columns.str.strip()
-            
-            # Asegurar numéricos
             cols = ['Score_Somatica', 'Score_Energia', 'Score_Regulacion', 'INDICE_TOTAL']
             for c in cols:
-                if c in df.columns:
-                    df[c] = pd.to_numeric(df[c], errors='coerce')
-            
-            # Filtrar datos válidos (evitar ceros o errores)
+                if c in df.columns: df[c] = pd.to_numeric(df[c], errors='coerce')
             df = df[df['INDICE_TOTAL'] > 0]
             return df
         except: return pd.DataFrame()
@@ -131,14 +138,15 @@ def calcular_ser(resp):
     return round(som,2), round(ene,2), round(reg,2), round(idx,2)
 
 def interpretar(idx):
-    if idx < 2.0: return "🔴 ZONA DE DESCONEXIÓN", "Sistema inmovilizado. Urge regulación."
-    elif idx < 3.0: return "🟠 ZONA REACTIVA", "Sistema en defensa y alerta perpetua."
-    elif idx < 4.0: return "🟡 MODO RESISTENCIA", "Funcionalidad mediante tensión."
-    elif idx < 4.6: return "🟢 ZONA DE PRESENCIA", "Flexibilidad y retorno al equilibrio."
-    else: return "🟣 ALTA SINTERGIA", "Coherencia total cerebro-corazón."
+    # USAMOS LOS TEXTOS EXACTOS QUE PEDISTE
+    if idx < 2.0: return "🔴 ZONA DE DESCONEXIÓN", "Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional."
+    elif idx < 3.0: return "🟠 ZONA REACTIVA", "Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad."
+    elif idx < 4.0: return "🟡 MODO RESISTENCIA", "Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente."
+    elif idx < 4.6: return "🟢 ZONA DE PRESENCIA", "Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza."
+    else: return "🟣 ALTA SINTERGIA", "Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa."
 
 # ==========================================
-# 4. PDF (CORREGIDO PARA EVITAR ERROR)
+# 4. PDF (CORREGIDO)
 # ==========================================
 class PDF(FPDF):
     def header(self):
@@ -148,25 +156,23 @@ class PDF(FPDF):
         self.ln(5)
 
 def generar_pdf(nombre, s, e, r, idx, estado):
-    # Usamos utf-8 limpiando caracteres raros si es necesario
     pdf = PDF()
     pdf.add_page()
     
-    # Definiciones
+    # 1. Definiciones
     pdf.set_font("Arial", "", 10)
     pdf.set_text_color(50, 50, 50)
-    # Reemplazamos caracteres que FPDF básico no soporta bien
     clean_def = DEFINICIONES_SER.replace("🔹", "-").encode('latin-1', 'replace').decode('latin-1')
     pdf.multi_cell(0, 5, clean_def)
     pdf.ln(5)
     
-    # Datos Usuario
+    # 2. Datos Usuario
     pdf.set_font("Arial", "", 12)
     pdf.set_text_color(0, 0, 0)
     clean_nombre = nombre.encode('latin-1', 'replace').decode('latin-1')
     pdf.cell(0, 10, f"Usuario: {clean_nombre} | {datetime.now().strftime('%d/%m/%Y')}", ln=True, align='C')
     
-    # Resultado
+    # 3. Resultado
     pdf.ln(5)
     pdf.set_font("Arial", "B", 20)
     pdf.cell(0, 10, f"INDICE: {idx}/5.0", ln=True, align='C')
@@ -175,7 +181,7 @@ def generar_pdf(nombre, s, e, r, idx, estado):
     clean_estado = estado.encode('latin-1', 'replace').decode('latin-1')
     pdf.cell(0, 10, f"{clean_estado}", ln=True, align='C')
     
-    # Desglose
+    # 4. Desglose
     pdf.ln(5)
     pdf.set_font("Arial", "", 12)
     pdf.set_text_color(0, 0, 0)
@@ -183,13 +189,13 @@ def generar_pdf(nombre, s, e, r, idx, estado):
     pdf.cell(0, 8, f"   - Energia: {e}", ln=True, align='C')
     pdf.cell(0, 8, f"   - Regulacion: {r}", ln=True, align='C')
     
-    # Niveles
+    # 5. Niveles
     pdf.ln(15)
     pdf.set_font("Arial", "B", 10)
-    pdf.cell(0, 10, "MAPA DE EVOLUCION:", ln=True)
-    pdf.set_font("Arial", "", 9)
+    pdf.cell(0, 10, "MAPA DE NIVELES (Referencia):", ln=True)
+    pdf.set_font("Arial", "", 8)
     clean_tabla = TABLA_NIVELES.encode('latin-1', 'replace').decode('latin-1')
-    pdf.multi_cell(0, 5, clean_tabla)
+    pdf.multi_cell(0, 4, clean_tabla)
     
     return pdf.output(dest="S").encode("latin-1")
 
@@ -206,14 +212,10 @@ with st.sidebar:
         if pwd == CLAVE_AULA: acceso = True
 
 if modo == "📝 Diagnóstico":
-    # --- TÍTULO CORREGIDO ---
     st.markdown("<h1>Indice S.E.R (Somática, Energía, Regulación) | Anahat</h1>", unsafe_allow_html=True)
     
-    # --- DISEÑO LIMPIO DE DEFINICIONES (SIN CUADRO AZUL FEO) ---
-    c_def1, c_def2, c_def3 = st.columns(3)
-    with c_def1: st.markdown("**🧘 SOMÁTICA**\n\nEl Sentir (Interocepción).")
-    with c_def2: st.markdown("**⚡ ENERGÍA**\n\nEl Motor (Vitalidad).")
-    with c_def3: st.markdown("**🌊 REGULACIÓN**\n\nEl Freno (Seguridad).")
+    # DESCRIPCIONES (TUS TEXTOS)
+    st.info(DEFINICIONES_SER.replace("🔹", "**").replace(":", "**:") )
     st.divider()
     
     if 'email_ok' not in st.session_state: st.session_state.email_ok = False
@@ -223,9 +225,15 @@ if modo == "📝 Diagnóstico":
         nombre = c1.text_input("Nombre")
         email = c2.text_input("Email").strip().lower()
         
-        st.caption("Responde: 1 (Nunca) - 5 (Siempre)")
+        # ESCALA VISUAL CLARA
+        st.markdown("""
+        <div class="scale-guide">
+            ESCALA DE RESPUESTA:<br>
+            1 = Nunca | 2 = Casi nunca | 3 = A veces | 4 = Frecuentemente | 5 = Siempre
+        </div>
+        """, unsafe_allow_html=True)
         
-        # PREGUNTAS (Tus 29)
+        # PREGUNTAS
         st.subheader("⚡ Energía")
         r_e = [st.slider(q,1,5,1) for q in ["¿Tienes insomnio con frecuencia?", "¿Tienes dificultad para concentrarte?", "¿Sientes falta de aire frecuentemente?", "¿Te dan infecciones respiratorias con frecuencia?"]]
         st.subheader("🌊 Regulación")
@@ -235,6 +243,7 @@ if modo == "📝 Diagnóstico":
         
         st.markdown("---")
         
+        # LÓGICA DE PRIVACIDAD
         ya_acepto = False
         if email: ya_acepto = verificar_privacidad(email)
         acepto_check = True
@@ -243,8 +252,8 @@ if modo == "📝 Diagnóstico":
         if ya_acepto:
             st.success(f"Hola de nuevo {nombre}.")
         else:
-            st.warning("⚠️ Acción Requerida")
-            with st.expander("📄 Leer Aviso de Privacidad"):
+            st.warning("⚠️ Aviso de Privacidad")
+            with st.expander("📄 Leer Aviso Legal"):
                 st.markdown(AVISO_LEGAL_COMPLETO)
             acepto_check = st.checkbox("He leído y acepto el Aviso de Privacidad.")
             priv_val = "SI" if acepto_check else "NO"
@@ -255,7 +264,7 @@ if modo == "📝 Diagnóstico":
         if not nombre or not email:
             st.error("Por favor completa nombre y email.")
         elif not ya_acepto and not acepto_check:
-            st.error("Debes aceptar el Aviso de Privacidad.")
+            st.error("Debes aceptar el Aviso de Privacidad para ver tus resultados.")
         else:
             # Cálculos
             todas = r_e + r_r + r_s
@@ -269,50 +278,45 @@ if modo == "📝 Diagnóstico":
             if guardar_completo(datos):
                 st.balloons()
                 
-                # --- AQUÍ EMPIEZA EL DASHBOARD CORREGIDO ---
+                # --- DASHBOARD VISUAL (TEXTOS RECUPERADOS) ---
                 
-                # 0. MAPA DE NIVELES (VISIBLE AL PRINCIPIO COMO PEDISTE)
-                st.markdown("### 🗺️ Mapa de Niveles")
-                st.markdown("""
-                <table class="levels-table">
-                  <tr><th>Nivel</th><th>Estado</th></tr>
-                  <tr><td>🟣 4.6 - 5.0</td><td>ALTA SINTERGIA</td></tr>
-                  <tr><td>🟢 4.0 - 4.5</td><td>ZONA DE PRESENCIA</td></tr>
-                  <tr><td>🟡 3.0 - 3.9</td><td>MODO RESISTENCIA</td></tr>
-                  <tr><td>🟠 2.0 - 2.9</td><td>ZONA REACTIVA</td></tr>
-                  <tr><td>🔴 1.0 - 1.9</td><td>ZONA DE DESCONEXIÓN</td></tr>
-                </table>
-                """, unsafe_allow_html=True)
-                
-                # 1. TU NÚMERO GRANDE
+                # KPI
                 st.markdown(f"<div class='kpi-label'>Tu Índice S.E.R.</div><div class='big-score'>{idx}</div>", unsafe_allow_html=True)
                 st.markdown(f"<h3 style='text-align: center; color: #4B0082;'>{tit}</h3>", unsafe_allow_html=True)
                 st.info(desc)
                 
-                # 2. CÁLCULO DE PROMEDIOS COMUNIDAD
+                # Tabla de Niveles (TUS TEXTOS)
+                st.markdown("### 🗺️ Mapa de Niveles S.E.R.")
+                st.markdown("""
+                <table class="levels-table">
+                  <tr><th style="width:140px;">Nivel</th><th>Descripción</th></tr>
+                  <tr><td>🟣 ALTA SINTERGIA<br>(4.6 - 5.0)</td><td><span class="level-desc">Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa.</span></td></tr>
+                  <tr><td>🟢 ZONA DE PRESENCIA<br>(4.0 - 4.5)</td><td><span class="level-desc">Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza.</span></td></tr>
+                  <tr><td>🟡 MODO RESISTENCIA<br>(3.0 - 3.9)</td><td><span class="level-desc">Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente.</span></td></tr>
+                  <tr><td>🟠 ZONA REACTIVA<br>(2.0 - 2.9)</td><td><span class="level-desc">Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad.</span></td></tr>
+                  <tr><td>🔴 ZONA DE DESCONEXIÓN<br>(1.0 - 1.9)</td><td><span class="level-desc">Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional.</span></td></tr>
+                </table>
+                """, unsafe_allow_html=True)
+                
+                # Promedios
                 df_com = obtener_datos_comunidad()
                 if not df_com.empty:
                     prom_s = df_com['Score_Somatica'].mean()
                     prom_e = df_com['Score_Energia'].mean()
                     prom_r = df_com['Score_Regulacion'].mean()
-                else:
-                    prom_s = prom_e = prom_r = 0
+                else: prom_s = prom_e = prom_r = 0
 
-                # 3. RADAR COMPARATIVO (TÚ VS COMUNIDAD)
+                # Radar
                 st.markdown("---")
-                st.markdown("### 📊 Comparativa con la Comunidad")
-                
+                st.markdown("### 📊 Comparativa")
                 fig = go.Figure()
-                # TÚ
                 fig.add_trace(go.Scatterpolar(r=[s,e,r,s], theta=['SOM','ENE','REG','SOM'], fill='toself', name='TÚ', line_color='#4B0082'))
-                # COMUNIDAD
                 if prom_s > 0:
                     fig.add_trace(go.Scatterpolar(r=[prom_s,prom_e,prom_r,prom_s], theta=['SOM','ENE','REG','SOM'], fill='toself', name='COMUNIDAD', line_color='gray', opacity=0.3))
-                
                 fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0,5])), height=300)
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # 4. EVOLUCIÓN (LINEA DE TIEMPO)
+                # Evolución
                 if not df_com.empty and 'Email' in df_com.columns:
                      mis_datos = df_com[df_com['Email'] == email]
                      if len(mis_datos) > 1:
@@ -321,7 +325,7 @@ if modo == "📝 Diagnóstico":
                          fig_line.update_traces(line_color='#4B0082')
                          st.plotly_chart(fig_line, use_container_width=True)
 
-                # 5. ENTREGABLES
+                # Entregables
                 st.markdown("---")
                 pdf_bytes = generar_pdf(nombre, s, e, r, idx, tit)
                 c_d1, c_d2 = st.columns(2)
