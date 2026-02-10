@@ -193,30 +193,30 @@ st.markdown(f"""
 # --- LÍNEA ANTERIOR ---
 @st.cache_resource(ttl=0) 
 def conectar_db():
+    import os
+    import json
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
-        # --- REEMPLAZA ESTE BLOQUE EXACTO ---
-        # Intentamos obtener el diccionario completo de secretos
-        try:
-            secrets_dict = st.secrets["gcp_service_account"]
-        except:
-            # Si falla (en Railway), lo buscamos como variable de entorno directa
-            import os
-            import json
-            secrets_dict = json.loads(os.environ.get("gcp_service_account", "{}"))
+        # 1. LEER DIRECTAMENTE DEL SISTEMA (Ignoramos st.secrets para evitar el error)
+        # Buscamos la variable de entorno que configuraste en el panel de Railway
+        env_secrets = os.environ.get("gcp_service_account")
+        
+        if env_secrets:
+            # Si estamos en Railway, usamos la variable de entorno
+            info = json.loads(env_secrets)
+        else:
+            # Si no hay variable (estamos en local/Streamlit Cloud), usamos st.secrets
+            # Pero solo lo llamamos si la variable de entorno falla
+            info = dict(st.secrets["gcp_service_account"])
 
-        if not secrets_dict:
-            return None
-
-        creds = Credentials.from_service_account_info(dict(secrets_dict), scopes=scopes)
-        # ------------------------------------
-
+        creds = Credentials.from_service_account_info(info, scopes=scopes)
         client = gspread.authorize(creds)
         return client.open_by_key(ID_SHEET)
-# --- LÍNEA POSTERIOR ---
+        
     except Exception as e:
-        # Es vital que este except atrape el error si el ID_SHEET falla
+        # Esto te dirá el error real (ej: si el JSON está mal pegado)
+        st.error(f"Error técnico real: {e}")
         return None
 
 
