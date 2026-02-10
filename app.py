@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px  # <--- RECUPERAMOS ESTO PARA LAS BARRAS Y LINEAS
+import plotly.express as px
 from datetime import datetime
 import pytz
 import gspread
@@ -12,9 +12,9 @@ import urllib.parse
 from textos_legales import AVISO_LEGAL_COMPLETO, DEFINICIONES_SER, TABLA_NIVELES
 
 # ==========================================
-# 1. CONFIGURACIÓN
+# 1. CONFIGURACIÓN VISUAL
 # ==========================================
-st.set_page_config(page_title="Indice S.E.R.", page_icon="🫀", layout="centered")
+st.set_page_config(page_title="Indice S.E.R. | Anahat", page_icon="🫀", layout="centered")
 
 # 🔐 TUS DATOS
 CLAVE_AULA = "ANAHAT2026"
@@ -24,13 +24,25 @@ WHATSAPP = "525512345678"
 st.markdown("""
 <style>
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
+    
+    /* Título Principal */
     h1 {color: #4B0082; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; text-align: center;}
+    
+    /* Estilos de Tablas de Niveles (Recuperado del diseño anterior) */
+    .levels-table {width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;}
+    .levels-table th {background-color: #f0f2f6; padding: 10px; border-bottom: 2px solid #4B0082; color: #4B0082;}
+    .levels-table td {padding: 10px; border-bottom: 1px solid #eee;}
+    
+    /* KPI Grande */
+    .big-score {font-size: 48px; font-weight: bold; color: #4B0082; text-align: center;}
+    .kpi-label {font-size: 16px; color: gray; text-align: center; text-transform: uppercase; letter-spacing: 1px;}
+    
+    /* Botones */
     .stButton>button {
         border-radius: 20px; background-color: white; 
         color: #4B0082; border: 1px solid #4B0082; font-weight: bold;
     }
     .stButton>button:hover {background-color: #4B0082; color: white;}
-    .stAlert {background-color: #f8f9fa; border-left: 4px solid #4B0082; color: #333;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -48,21 +60,37 @@ def conectar_db():
         st.error(f"Error de conexión: {e}")
         return None
 
-def verificar_privacidad(email):
+def obtener_datos_comunidad():
+    """Trae todos los datos para calcular promedios"""
     client = conectar_db()
-    if not client or not email: return False
-    try:
-        ws = client.worksheet("DB_Anahat_Clientes")
-        records = ws.get_all_records()
-        df = pd.DataFrame(records)
-        df.columns = df.columns.str.strip()
+    if client:
+        try:
+            ws = client.worksheet("DB_Anahat_Clientes")
+            records = ws.get_all_records()
+            df = pd.DataFrame(records)
+            # Limpieza de columnas
+            df.columns = df.columns.str.strip()
+            
+            # Asegurar numéricos
+            cols = ['Score_Somatica', 'Score_Energia', 'Score_Regulacion', 'INDICE_TOTAL']
+            for c in cols:
+                if c in df.columns:
+                    df[c] = pd.to_numeric(df[c], errors='coerce')
+            
+            # Filtrar datos válidos (evitar ceros o errores)
+            df = df[df['INDICE_TOTAL'] > 0]
+            return df
+        except: return pd.DataFrame()
+    return pd.DataFrame()
+
+def verificar_privacidad(email):
+    df = obtener_datos_comunidad()
+    if not df.empty and 'Email' in df.columns and 'Privacidad_Aceptada' in df.columns:
         email_clean = email.strip().lower()
-        if 'Email' in df.columns and 'Privacidad_Aceptada' in df.columns:
-            usuario = df[df['Email'].astype(str).str.strip().str.lower() == email_clean]
-            if not usuario.empty:
-                estado = str(usuario.iloc[-1]['Privacidad_Aceptada']).strip().upper()
-                if estado == "SI": return True
-    except: return False
+        usuario = df[df['Email'].astype(str).str.strip().str.lower() == email_clean]
+        if not usuario.empty:
+            estado = str(usuario.iloc[-1]['Privacidad_Aceptada']).strip().upper()
+            if estado == "SI": return True
     return False
 
 def guardar_completo(datos):
@@ -75,24 +103,6 @@ def guardar_completo(datos):
         except Exception as e:
             st.error(f"Error al guardar: {e}")
             return False
-
-def obtener_historial(email):
-    """Recupera los datos previos de este usuario para la gráfica de evolución"""
-    client = conectar_db()
-    if not client or not email: return pd.DataFrame()
-    try:
-        ws = client.worksheet("DB_Anahat_Clientes")
-        records = ws.get_all_records()
-        df = pd.DataFrame(records)
-        df.columns = df.columns.str.strip()
-        
-        # Filtrar por email
-        if 'Email' in df.columns:
-            email_clean = email.strip().lower()
-            historial = df[df['Email'].astype(str).str.strip().str.lower() == email_clean]
-            return historial
-    except: return pd.DataFrame()
-    return pd.DataFrame()
 
 def obtener_videos():
     client = conectar_db()
@@ -118,7 +128,7 @@ def calcular_ser(resp):
     reg = sum([6-x for x in resp[4:12]]) / 8
     som = sum([x for x in resp[12:29]]) / 17
     idx = (ene + reg + som) / 3
-    return round(som,1), round(ene,1), round(reg,1), round(idx,1)
+    return round(som,2), round(ene,2), round(reg,2), round(idx,2)
 
 def interpretar(idx):
     if idx < 2.0: return "🔴 ZONA DE DESCONEXIÓN", "Sistema inmovilizado. Urge regulación."
@@ -128,45 +138,58 @@ def interpretar(idx):
     else: return "🟣 ALTA SINTERGIA", "Coherencia total cerebro-corazón."
 
 # ==========================================
-# 4. PDF
+# 4. PDF (CORREGIDO PARA EVITAR ERROR)
 # ==========================================
+class PDF(FPDF):
+    def header(self):
+        self.set_font('Arial', 'B', 15)
+        self.set_text_color(75, 0, 130)
+        self.cell(0, 10, 'INDICE S.E.R. | UNIDAD CONSCIENTE', 0, 1, 'C')
+        self.ln(5)
+
 def generar_pdf(nombre, s, e, r, idx, estado):
-    pdf = FPDF()
+    # Usamos utf-8 limpiando caracteres raros si es necesario
+    pdf = PDF()
     pdf.add_page()
-    pdf.set_font("Arial", "B", 20)
-    pdf.set_text_color(75, 0, 130)
-    pdf.cell(0, 15, "INDICE S.E.R. | UNIDAD CONSCIENTE", ln=True, align='C')
     
-    pdf.ln(5)
+    # Definiciones
     pdf.set_font("Arial", "", 10)
     pdf.set_text_color(50, 50, 50)
-    pdf.multi_cell(0, 5, DEFINICIONES_SER)
+    # Reemplazamos caracteres que FPDF básico no soporta bien
+    clean_def = DEFINICIONES_SER.replace("🔹", "-").encode('latin-1', 'replace').decode('latin-1')
+    pdf.multi_cell(0, 5, clean_def)
     pdf.ln(5)
     
+    # Datos Usuario
     pdf.set_font("Arial", "", 12)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 10, f"Usuario: {nombre} | {datetime.now().strftime('%d/%m/%Y')}", ln=True, align='C')
+    clean_nombre = nombre.encode('latin-1', 'replace').decode('latin-1')
+    pdf.cell(0, 10, f"Usuario: {clean_nombre} | {datetime.now().strftime('%d/%m/%Y')}", ln=True, align='C')
     
+    # Resultado
     pdf.ln(5)
-    pdf.set_font("Arial", "B", 18)
-    pdf.cell(0, 10, f"TU ÍNDICE: {idx}/5.0", ln=True, align='C')
+    pdf.set_font("Arial", "B", 20)
+    pdf.cell(0, 10, f"INDICE: {idx}/5.0", ln=True, align='C')
     pdf.set_font("Arial", "B", 14)
     pdf.set_text_color(75, 0, 130)
-    pdf.cell(0, 10, f"{estado}", ln=True, align='C')
+    clean_estado = estado.encode('latin-1', 'replace').decode('latin-1')
+    pdf.cell(0, 10, f"{clean_estado}", ln=True, align='C')
     
+    # Desglose
     pdf.ln(5)
     pdf.set_font("Arial", "", 12)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 8, f"   - Somática (Sentir): {s}", ln=True, align='C')
-    pdf.cell(0, 8, f"   - Energía (Hacer): {e}", ln=True, align='C')
-    pdf.cell(0, 8, f"   - Regulación (Freno): {r}", ln=True, align='C')
+    pdf.cell(0, 8, f"   - Somatica: {s}", ln=True, align='C')
+    pdf.cell(0, 8, f"   - Energia: {e}", ln=True, align='C')
+    pdf.cell(0, 8, f"   - Regulacion: {r}", ln=True, align='C')
     
+    # Niveles
     pdf.ln(15)
     pdf.set_font("Arial", "B", 10)
-    pdf.cell(0, 10, "MAPA DE EVOLUCIÓN (Referencia):", ln=True)
+    pdf.cell(0, 10, "MAPA DE EVOLUCION:", ln=True)
     pdf.set_font("Arial", "", 9)
-    pdf.set_text_color(80, 80, 80)
-    pdf.multi_cell(0, 5, TABLA_NIVELES)
+    clean_tabla = TABLA_NIVELES.encode('latin-1', 'replace').decode('latin-1')
+    pdf.multi_cell(0, 5, clean_tabla)
     
     return pdf.output(dest="S").encode("latin-1")
 
@@ -183,9 +206,15 @@ with st.sidebar:
         if pwd == CLAVE_AULA: acceso = True
 
 if modo == "📝 Diagnóstico":
-    st.title("Indice S.E.R.")
+    # --- TÍTULO CORREGIDO ---
+    st.markdown("<h1>Indice S.E.R (Somática, Energía, Regulación) | Anahat</h1>", unsafe_allow_html=True)
     
-    st.info(DEFINICIONES_SER.replace("🔹", "**").replace(":", "**:") )
+    # --- DISEÑO LIMPIO DE DEFINICIONES (SIN CUADRO AZUL FEO) ---
+    c_def1, c_def2, c_def3 = st.columns(3)
+    with c_def1: st.markdown("**🧘 SOMÁTICA**\n\nEl Sentir (Interocepción).")
+    with c_def2: st.markdown("**⚡ ENERGÍA**\n\nEl Motor (Vitalidad).")
+    with c_def3: st.markdown("**🌊 REGULACIÓN**\n\nEl Freno (Seguridad).")
+    st.divider()
     
     if 'email_ok' not in st.session_state: st.session_state.email_ok = False
     
@@ -196,6 +225,7 @@ if modo == "📝 Diagnóstico":
         
         st.caption("Responde: 1 (Nunca) - 5 (Siempre)")
         
+        # PREGUNTAS (Tus 29)
         st.subheader("⚡ Energía")
         r_e = [st.slider(q,1,5,1) for q in ["¿Tienes insomnio con frecuencia?", "¿Tienes dificultad para concentrarte?", "¿Sientes falta de aire frecuentemente?", "¿Te dan infecciones respiratorias con frecuencia?"]]
         st.subheader("🌊 Regulación")
@@ -211,12 +241,12 @@ if modo == "📝 Diagnóstico":
         priv_val = "SI"
         
         if ya_acepto:
-            st.success(f"Hola de nuevo {nombre}. Términos verificados.")
+            st.success(f"Hola de nuevo {nombre}.")
         else:
             st.warning("⚠️ Acción Requerida")
-            with st.expander("📄 Leer Aviso de Privacidad y Términos"):
+            with st.expander("📄 Leer Aviso de Privacidad"):
                 st.markdown(AVISO_LEGAL_COMPLETO)
-            acepto_check = st.checkbox("He leído y acepto el Aviso de Privacidad y Términos.")
+            acepto_check = st.checkbox("He leído y acepto el Aviso de Privacidad.")
             priv_val = "SI" if acepto_check else "NO"
 
         enviar = st.form_submit_button("🏁 OBTENER INDICE S.E.R.")
@@ -227,62 +257,80 @@ if modo == "📝 Diagnóstico":
         elif not ya_acepto and not acepto_check:
             st.error("Debes aceptar el Aviso de Privacidad.")
         else:
+            # Cálculos
             todas = r_e + r_r + r_s
             s, e, r, idx = calcular_ser(todas)
             tit, desc = interpretar(idx)
             fecha = datetime.now(pytz.timezone('America/Mexico_City')).strftime("%Y-%m-%d")
             
-            # GUARDAR
+            # Guardar
             datos = [fecha, email, nombre, s, e, r, idx, tit] + todas + [priv_val]
             
             if guardar_completo(datos):
                 st.balloons()
                 
-                # --- DASHBOARD VISUAL (LO QUE PEDISTE) ---
+                # --- AQUÍ EMPIEZA EL DASHBOARD CORREGIDO ---
                 
-                # 1. KPI y RADAR
-                c_g, c_t = st.columns([1,2])
-                with c_g:
-                    fig = go.Figure(go.Scatterpolar(r=[s,e,r,s], theta=['SOM','ENE','REG','SOM'], fill='toself', line_color='#4B0082'))
-                    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0,5])), showlegend=False, height=200, margin=dict(t=20,b=20,l=20,r=20))
-                    st.plotly_chart(fig, use_container_width=True)
-                with c_t:
-                    st.subheader(tit)
-                    st.write(desc)
+                # 0. MAPA DE NIVELES (VISIBLE AL PRINCIPIO COMO PEDISTE)
+                st.markdown("### 🗺️ Mapa de Niveles")
+                st.markdown("""
+                <table class="levels-table">
+                  <tr><th>Nivel</th><th>Estado</th></tr>
+                  <tr><td>🟣 4.6 - 5.0</td><td>ALTA SINTERGIA</td></tr>
+                  <tr><td>🟢 4.0 - 4.5</td><td>ZONA DE PRESENCIA</td></tr>
+                  <tr><td>🟡 3.0 - 3.9</td><td>MODO RESISTENCIA</td></tr>
+                  <tr><td>🟠 2.0 - 2.9</td><td>ZONA REACTIVA</td></tr>
+                  <tr><td>🔴 1.0 - 1.9</td><td>ZONA DE DESCONEXIÓN</td></tr>
+                </table>
+                """, unsafe_allow_html=True)
                 
-                # 2. GRÁFICA DE BARRAS (LAS 3 DIMENSIONES)
-                st.markdown("##### 📊 Desglose por Dimensión")
-                df_bar = pd.DataFrame({'Dimensión':['Somática','Energía','Regulación'], 'Puntaje':[s,e,r]})
-                fig_bar = px.bar(df_bar, x='Puntaje', y='Dimensión', orientation='h', color='Dimensión', color_discrete_sequence=['#4B0082'])
-                fig_bar.update_layout(height=150, xaxis=dict(range=[0,5.5]), margin=dict(t=0,b=0,l=0,r=0))
-                st.plotly_chart(fig_bar, use_container_width=True)
+                # 1. TU NÚMERO GRANDE
+                st.markdown(f"<div class='kpi-label'>Tu Índice S.E.R.</div><div class='big-score'>{idx}</div>", unsafe_allow_html=True)
+                st.markdown(f"<h3 style='text-align: center; color: #4B0082;'>{tit}</h3>", unsafe_allow_html=True)
+                st.info(desc)
+                
+                # 2. CÁLCULO DE PROMEDIOS COMUNIDAD
+                df_com = obtener_datos_comunidad()
+                if not df_com.empty:
+                    prom_s = df_com['Score_Somatica'].mean()
+                    prom_e = df_com['Score_Energia'].mean()
+                    prom_r = df_com['Score_Regulacion'].mean()
+                else:
+                    prom_s = prom_e = prom_r = 0
 
-                # 3. EVOLUCIÓN (SI HAY HISTORIAL)
-                historial = obtener_historial(email)
-                if len(historial) > 1:
-                    st.markdown("##### 📈 Tu Evolución")
-                    # Asegurar que la fecha sea datetime
-                    historial['Fecha'] = pd.to_datetime(historial['Fecha'])
-                    historial = historial.sort_values('Fecha')
-                    fig_line = px.line(historial, x='Fecha', y='INDICE_TOTAL', markers=True, title="Histórico de Progreso")
-                    fig_line.update_traces(line_color='#4B0082')
-                    fig_line.update_layout(yaxis=dict(range=[1,5.5]))
-                    st.plotly_chart(fig_line, use_container_width=True)
-
-                # 4. TABLA DE NIVELES (CONTEXTO)
-                with st.expander("ℹ️ Ver Mapa de Niveles Completo"):
-                    st.markdown(TABLA_NIVELES)
+                # 3. RADAR COMPARATIVO (TÚ VS COMUNIDAD)
+                st.markdown("---")
+                st.markdown("### 📊 Comparativa con la Comunidad")
+                
+                fig = go.Figure()
+                # TÚ
+                fig.add_trace(go.Scatterpolar(r=[s,e,r,s], theta=['SOM','ENE','REG','SOM'], fill='toself', name='TÚ', line_color='#4B0082'))
+                # COMUNIDAD
+                if prom_s > 0:
+                    fig.add_trace(go.Scatterpolar(r=[prom_s,prom_e,prom_r,prom_s], theta=['SOM','ENE','REG','SOM'], fill='toself', name='COMUNIDAD', line_color='gray', opacity=0.3))
+                
+                fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0,5])), height=300)
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # 4. EVOLUCIÓN (LINEA DE TIEMPO)
+                if not df_com.empty and 'Email' in df_com.columns:
+                     mis_datos = df_com[df_com['Email'] == email]
+                     if len(mis_datos) > 1:
+                         st.markdown("### 📈 Tu Evolución")
+                         fig_line = px.line(mis_datos, x='Fecha', y='INDICE_TOTAL', markers=True)
+                         fig_line.update_traces(line_color='#4B0082')
+                         st.plotly_chart(fig_line, use_container_width=True)
 
                 # 5. ENTREGABLES
-                st.divider()
+                st.markdown("---")
                 pdf_bytes = generar_pdf(nombre, s, e, r, idx, tit)
                 c_d1, c_d2 = st.columns(2)
                 with c_d1:
-                    st.download_button("📥 Descargar Reporte (PDF)", pdf_bytes, f"Reporte_{nombre}.pdf", "application/pdf")
+                    st.download_button("📥 Descargar PDF", pdf_bytes, f"Reporte_{nombre}.pdf", "application/pdf")
                 with c_d2:
                     msg = f"Hola, soy {nombre}. Mi índice S.E.R. es {idx} ({tit}). Quiero unirme a la comunidad y subir mi índice."
                     link_wa = f"https://wa.me/{WHATSAPP}?text={urllib.parse.quote(msg)}"
-                    st.link_button("🟢 Unirme a la Comunidad (WhatsApp)", link_wa, type="primary")
+                    st.link_button("🟢 Unirme (WhatsApp)", link_wa, type="primary")
 
 elif modo == "🧘 Aula Virtual":
     st.title("Aula Virtual")
