@@ -99,33 +99,32 @@ h1 {{color: {COLOR_MORADO}; font-family: 'Helvetica Neue', sans-serif; font-weig
 
 ) 
 @st.cache_resource(ttl=0)
+@st.cache_resource(ttl=0) 
 def conectar_db():
     import os
     import json
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
-        # 1. Intentamos leer la variable directamente del sistema operativo (Railway)
+        # 1. Leemos del sistema (Railway)
         env_secrets = os.environ.get("gcp_service_account")
         
         if env_secrets:
-            # Si la variable existe en Railway, la cargamos
-            info = json.loads(env_secrets)
+            # LIMPIEZA CLAVE: Reemplazamos los saltos de línea mal interpretados
+            # Esto corrige el error 'Invalid \escape'
+            raw_json = env_secrets.replace('\\n', '\n')
+            info = json.loads(raw_json, strict=False)
         else:
-            # Si no existe (estás en local o Streamlit Cloud), usamos la ruta normal
-            # Pero solo si es estrictamente necesario
-            try:
-                info = dict(st.secrets["gcp_service_account"])
-            except:
-                st.error("No se encontró la configuración en Variables de Railway ni en Secrets.")
-                return None
+            # Fallback para Streamlit Cloud
+            info = dict(st.secrets["gcp_service_account"])
 
         creds = Credentials.from_service_account_info(info, scopes=scopes)
         client = gspread.authorize(creds)
         return client.open_by_key(ID_SHEET)
         
     except Exception as e:
-        st.error(f"Error técnico en la conexión: {e}")
+        # Si sale error aquí, dinos exactamente qué dice
+        st.error(f"Error técnico en conexión: {e}")
         return None
 
 @st.cache_data(ttl=60)
