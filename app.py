@@ -1128,8 +1128,9 @@ elif modo == "🧘 Aula Virtual":
                 with st.expander(f"📅 {f_str} | {row['Titulo']}", expanded=(i==0)):
 
                     st.write(row.get('Descripcion',''))
-
-                    st.video(row['Link'])
+                    url_video = row['Link'].replace("youtu.be/", "www.youtube.com/embed/").replace("watch?v=", "embed/")
+                    st.video(url_video)
+                    
 
         else: st.info("No hay clases cargadas aún.")
 
