@@ -1,18 +1,18 @@
 # NOMBRE DEL ARCHIVO: textos_legales.py
 
-# 1. DEFINICIONES S.E.R. (Aparecen en la App al inicio y en el PDF)
+# 1. DEFINICIONES S.E.R. (TUS TEXTOS ORIGINALES)
 DEFINICIONES_SER = """
 🔹 SOMÁTICA (El Sentir):
-Es la capacidad de percepción interna (Interocepción). Es la base de la consciencia corporal y la presencia.
+Es la capacidad de tu sistema nervioso para percibir, traducir y habitar las señales internas de tu cuerpo como fuente primaria de sabiduría.
 
 🔹 ENERGÍA (El Motor):
-Es la disponibilidad de recursos para la acción. Mide tu vitalidad frente al agotamiento.
+Es la cantidad de fuerza vital libre que tienes disponible para crear, expandirte y sostener tu propósito con claridad.
 
 🔹 REGULACIÓN (El Freno):
-Es la capacidad de tu Sistema Nervioso para transitar del estrés a la calma. Mide tu seguridad interna.
+Es tu capacidad biológica para transitar los retos de la vida y retornar a la seguridad, al centro y al equilibrio de forma natural.
 """
 
-# 2. AVISO DE PRIVACIDAD (Basado en tu documento)
+# 2. AVISO DE PRIVACIDAD
 AVISO_LEGAL_COMPLETO = """
 ### AVISO DE PRIVACIDAD
 
@@ -34,13 +34,22 @@ Usted tiene derecho a Acceder, Rectificar, Cancelar u Oponerse al tratamiento de
 Al usar este sitio, el USUARIO acepta someterse a las leyes y tribunales de la Ciudad de México, renunciando a cualquier otro fuero. "Unidad Consciente" es propiedad intelectual de DIGITAL SPIRIT SAS DE C.V.
 """
 
-# 3. TABLA DE NIVELES (Pie de página del PDF)
+# 3. TABLA DE NIVELES (TUS TEXTOS ORIGINALES)
 TABLA_NIVELES = """
-MAPA DE NIVELES S.E.R. (Tu ruta de evolución)
+MAPA DE NIVELES S.E.R.
 
-[1.0 - 1.9] 🔴 ZONA DE DESCONEXIÓN: Sistema inmovilizado. Riesgo de Burnout.
-[2.0 - 2.9] 🟠 ZONA REACTIVA: Sistema en defensa y alerta perpetua.
-[3.0 - 3.9] 🟡 MODO RESISTENCIA: Funcionalidad mediante tensión sostenida.
-[4.0 - 4.5] 🟢 ZONA DE PRESENCIA: Flexibilidad y retorno al equilibrio.
-[4.6 - 5.0] 🟣 ALTA SINTERGIA: Coherencia total cerebro-corazón.
+[1.0 - 1.9] 🔴 ZONA DE DESCONEXIÓN:
+Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional.
+
+[2.0 - 2.9] 🟠 ZONA REACTIVA:
+Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad.
+
+[3.0 - 3.9] 🟡 MODO RESISTENCIA:
+Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente.
+
+[4.0 - 4.5] 🟢 ZONA DE PRESENCIA:
+Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza.
+
+[4.6 - 5.0] 🟣 ALTA SINTERGIA:
+Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa.
 """
