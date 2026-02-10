@@ -189,24 +189,32 @@ st.markdown(f"""
 
 
 
+
+# --- LÍNEA ANTERIOR ---
 @st.cache_resource(ttl=0) 
 def conectar_db():
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
-        # --- CAMBIO MÍNIMO PARA SEGURIDAD EN RAILWAY ---
-        # Usamos dict() solo si info existe para evitar errores de tipo
-        info = st.secrets.get("gcp_service_account")
-        
-        if not info:
-            return None 
-            
-        # En Railway es mejor pasarlo así para asegurar que reconozca el JSON
-        creds = Credentials.from_service_account_info(info, scopes=scopes)
-        # -----------------------------------------------
+        # --- REEMPLAZA ESTE BLOQUE EXACTO ---
+        # Intentamos obtener el diccionario completo de secretos
+        try:
+            secrets_dict = st.secrets["gcp_service_account"]
+        except:
+            # Si falla (en Railway), lo buscamos como variable de entorno directa
+            import os
+            import json
+            secrets_dict = json.loads(os.environ.get("gcp_service_account", "{}"))
+
+        if not secrets_dict:
+            return None
+
+        creds = Credentials.from_service_account_info(dict(secrets_dict), scopes=scopes)
+        # ------------------------------------
 
         client = gspread.authorize(creds)
         return client.open_by_key(ID_SHEET)
+# --- LÍNEA POSTERIOR ---
     except Exception as e:
         # Es vital que este except atrape el error si el ID_SHEET falla
         return None
