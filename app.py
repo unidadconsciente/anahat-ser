@@ -348,32 +348,34 @@ def guardar_completo(datos):
     return False
 
 
+
 @st.cache_data(ttl=60)
 def obtener_videos():
-    # En lugar de usar el client global, abrimos una conexión local y fresca
     try:
-        # 1. Autenticación directa y atómica
-        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
-        client = gspread.authorize(creds)
-        
-        # 2. Apertura directa sin pasar por variables intermedias
-        ws = client.open_by_key(ID_SHEET).worksheet("VIDEOS_AULA")
+        client = conectar_db()
+        if not client:
+            return pd.DataFrame()
+
+        ws = client.worksheet("VIDEOS_AULA")
         records = ws.get_all_records()
-        
+
         if records:
             df = pd.DataFrame(records)
             df.columns = [str(c).strip() for c in df.columns]
+
             if 'Fecha' in df.columns:
                 df['Fecha'] = pd.to_datetime(df['Fecha'], errors='coerce')
                 df = df.sort_values(by='Fecha', ascending=False)
+
             return df
+
     except Exception as e:
-        # Si esto no muestra nada en pantalla, es que el código ni siquiera está corriendo
-        st.error(f"Error de lectura en Railway: {e}")
-    
+        st.error(f"Error Aula Virtual: {e}")
+
     return pd.DataFrame()
 
+    
+  
 
 # ==========================================
 
