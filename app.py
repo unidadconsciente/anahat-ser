@@ -9,7 +9,7 @@ from google.oauth2.service_account import Credentials
 from fpdf import FPDF
 import urllib.parse
 import os
-import json   # ⬅️ NECESARIO
+import json
 
 # ==========================================
 # 1. DATOS Y TEXTOS
@@ -54,16 +54,47 @@ COLOR_MORADO = "#4B0082"
 COLOR_DORADO = "#DAA520"
 COLOR_AZUL = "#008080"
 
-st.markdown(f"""
+st.markdown(
+    f"""
 <style>
-    header {{visibility: visible !important;}}
-    footer {{visibility: hidden;}}
-    h1 {{color: {COLOR_MORADO}; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; text-align: center; margin-top: 0;}}
+header {{visibility: visible !important;}}
+footer {{visibility: hidden;}}
+
+h1 {{color: {COLOR_MORADO}; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; text-align: center; margin-top: 0;}}
+
+.header-brand {{font-size: 24px; font-weight: bold; color: {COLOR_MORADO}; margin-bottom: 0px;}}
+.header-links a {{text-decoration: none; color: #666; font-size: 14px; margin-right: 15px;}}
+.header-links a:hover {{color: {COLOR_MORADO}; font-weight: bold;}}
+
+.levels-table {{width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: sans-serif;}}
+.levels-table th {{
+    background-color: {COLOR_MORADO};
+    padding: 12px;
+    color: white !important;
+    text-align: left;
+    font-weight: bold;
+}}
+.levels-table td {{padding: 12px; border-bottom: 1px solid #eee; vertical-align: top; color: #333; font-size: 13px;}}
+
+.big-score {{font-size: 56px; font-weight: bold; color: {COLOR_MORADO}; line-height: 1;}}
+.community-score {{font-size: 16px; color: gray; margin-top: 10px;}}
+.kpi-container {{text-align: center; padding: 20px; background-color: #fcfcfc; border-radius: 10px; border: 1px solid #eee;}}
+
+.def-card {{background-color: #f9f9f9; border-left: 4px solid {COLOR_MORADO}; padding: 10px; border-radius: 4px; height: 100%;}}
+.def-title {{color: {COLOR_MORADO}; font-weight: bold; font-size: 14px; margin-bottom: 5px;}}
+.def-body {{font-size: 12px; color: #333; line-height: 1.3;}}
+
+.scale-guide {{background-color: #f0f2f6; color: #333; padding: 10px; border-radius: 5px; text-align: center; font-weight: 600; font-size: 14px; margin-bottom: 15px;}}
+
+.stButton>button {{border-radius: 20px; background-color: white; color: {COLOR_MORADO}; border: 1px solid {COLOR_MORADO}; font-weight: bold;}}
+.stButton>button:hover {{background-color: {COLOR_MORADO}; color: white;}}
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True
+)
 
 # ==========================================
-# 3. CONEXIÓN DB (Railway)
+# 3. CONEXIÓN DB (TTL=0)
 # ==========================================
 
 @st.cache_resource(ttl=0)
@@ -72,9 +103,8 @@ def conectar_db():
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
         env_secrets = os.environ.get("gcp_service_account")
-
         if not env_secrets:
-            st.error("❌ Railway no está inyectando la variable gcp_service_account")
+            st.error("Railway NO está inyectando la variable gcp_service_account")
             return None
 
         info = json.loads(env_secrets)
@@ -83,37 +113,8 @@ def conectar_db():
 
         return client.open_by_key(ID_SHEET)
 
-    except Exception as e:
-        st.error(f"❌ Error conectando con Google Sheets: {e}")
+    except Exception:
         return None
-
-
-
-def obtener_datos_comunidad():
-
-    client = conectar_db()
-
-    if client:
-        try:
-            ws = client.worksheet("DB_Anahat_Clientes")
-            records = ws.get_all_records()
-            df = pd.DataFrame(records)
-
-            df.columns = df.columns.str.strip()
-            cols = ['Score_Somatica', 'Score_Energia', 'Score_Regulacion', 'INDICE_TOTAL']
-
-            for c in cols:
-                if c in df.columns:
-                    df[c] = pd.to_numeric(df[c], errors='coerce')
-
-            df['Calculado_Total'] = (df['Score_Somatica'] + df['Score_Energia'] + df['Score_Regulacion']) / 3
-            df = df[(df['Calculado_Total'] >= 1.0) & (df['Calculado_Total'] <= 5.0)]
-
-            return df
-        except:
-            return pd.DataFrame()
-
-    return pd.DataFrame()
 
 
 
