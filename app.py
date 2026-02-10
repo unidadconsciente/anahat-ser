@@ -10,11 +10,22 @@ from fpdf import FPDF
 import urllib.parse
 import os
 
-# IMPORTAMOS TUS TEXTOS
-from textos_legales import AVISO_LEGAL_COMPLETO, DEFINICIONES_SER, TABLA_NIVELES
+# ==========================================
+# 1. DATOS GLOBALES (Textos y Niveles)
+# ==========================================
+# Formato: (Rango, Nivel, Descripción Corta)
+NIVELES_DATA = [
+    ("4.6 - 5.0", "ALTA SINTERGIA", "Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa."),
+    ("4.0 - 4.5", "ZONA DE PRESENCIA", "Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza."),
+    ("3.0 - 3.9", "MODO RESISTENCIA", "Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente."),
+    ("2.0 - 2.9", "ZONA REACTIVA", "Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad."),
+    ("1.0 - 1.9", "ZONA DE DESCONEXIÓN", "Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD).")
+]
+
+from textos_legales import AVISO_LEGAL_COMPLETO, DEFINICIONES_SER
 
 # ==========================================
-# 1. CONFIGURACIÓN VISUAL
+# 2. CONFIGURACIÓN VISUAL
 # ==========================================
 icono_pagina = "logo.png" if os.path.exists("logo.png") else "🫀"
 
@@ -22,7 +33,7 @@ st.set_page_config(
     page_title="Indice S.E.R. | Anahat", 
     page_icon=icono_pagina, 
     layout="centered", 
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded" # MENÚ SIEMPRE ABIERTO
 )
 
 # DATOS
@@ -46,11 +57,12 @@ st.markdown(f"""
     .header-links a {{text-decoration: none; color: #666; font-size: 14px; margin-right: 15px;}}
     .header-links a:hover {{color: {COLOR_MORADO}; font-weight: bold;}}
     
+    /* TABLA DE NIVELES: FORZAR TEXTO BLANCO */
     .levels-table {{width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: sans-serif;}}
     .levels-table th {{
         background-color: {COLOR_MORADO}; 
         padding: 12px; 
-        color: #FFFFFF !important; 
+        color: white !important; /* BLANCO OBLIGATORIO */
         text-align: left;
         font-weight: bold;
     }}
@@ -72,9 +84,9 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. CONEXIÓN DB
+# 3. CONEXIÓN DB (TTL=0 CORRIGE ERROR DE PRIVACIDAD)
 # ==========================================
-@st.cache_resource
+@st.cache_resource(ttl=0) 
 def conectar_db():
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -96,10 +108,9 @@ def obtener_datos_comunidad():
             for c in cols:
                 if c in df.columns: df[c] = pd.to_numeric(df[c], errors='coerce')
             
-            # FILTRO: Calculamos el promedio nosotros mismos y filtramos basura > 5
+            # Cálculo seguro y filtro de basura > 5
             df['Calculado_Total'] = (df['Score_Somatica'] + df['Score_Energia'] + df['Score_Regulacion']) / 3
             df = df[(df['Calculado_Total'] >= 1.0) & (df['Calculado_Total'] <= 5.0)]
-            
             return df
         except: return pd.DataFrame()
     return pd.DataFrame()
@@ -139,7 +150,7 @@ def obtener_videos():
     return pd.DataFrame()
 
 # ==========================================
-# 3. LÓGICA CIENTÍFICA
+# 4. LÓGICA CIENTÍFICA
 # ==========================================
 def calcular_ser(resp):
     ene = sum([6-x for x in resp[0:4]]) / 4
@@ -149,14 +160,14 @@ def calcular_ser(resp):
     return round(som,2), round(ene,2), round(reg,2), round(idx,2)
 
 def interpretar(idx):
-    if idx < 2.0: return "ZONA DE DESCONEXIÓN", "Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional."
-    elif idx < 3.0: return "ZONA REACTIVA", "Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad."
-    elif idx < 4.0: return "MODO RESISTENCIA", "Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente."
-    elif idx < 4.6: return "ZONA DE PRESENCIA", "Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza."
-    else: return "ALTA SINTERGIA", "Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa."
+    if idx < 2.0: return NIVELES_DATA[4][1], NIVELES_DATA[4][2]
+    elif idx < 3.0: return NIVELES_DATA[3][1], NIVELES_DATA[3][2]
+    elif idx < 4.0: return NIVELES_DATA[2][1], NIVELES_DATA[2][2]
+    elif idx < 4.6: return NIVELES_DATA[1][1], NIVELES_DATA[1][2]
+    else: return NIVELES_DATA[0][1], NIVELES_DATA[0][2]
 
 # ==========================================
-# 4. PDF (DORADO, BARRAS, SIN EMOJIS)
+# 5. PDF (REDISEÑO: TEXTO FLUIDO, NEGRO, SIN USUARIO)
 # ==========================================
 class PDF(FPDF):
     def header(self):
@@ -164,19 +175,19 @@ class PDF(FPDF):
         self.set_fill_color(218, 165, 32)
         self.rect(0, 0, 210, 35, 'F') 
         
-        # Logo 
+        # Logo AJUSTADO (8mm ancho, centrado en franja)
         if os.path.exists("logo.png"):
-            self.image("logo.png", 10, 5, 20)
+            self.image("logo.png", 10, 10, 8)
             
         # Textos Header
-        self.set_font('Arial', 'B', 14)
-        self.set_text_color(255, 255, 255)
-        self.set_xy(35, 10)
-        self.cell(0, 10, 'UNIDAD CONSCIENTE', 0, 1, 'L')
-        
         self.set_font('Arial', '', 10)
-        self.set_xy(35, 18)
-        self.cell(0, 10, 'INDICE S.E.R.', 0, 1, 'L')
+        self.set_text_color(255, 255, 255)
+        self.set_xy(25, 10)
+        self.cell(0, 5, 'UNIDAD CONSCIENTE', 0, 1, 'L')
+        
+        self.set_font('Arial', 'B', 16) # Más grande
+        self.set_xy(25, 16)
+        self.cell(0, 8, 'INDICE S.E.R.', 0, 1, 'L')
         self.ln(20)
 
     def footer(self):
@@ -184,6 +195,7 @@ class PDF(FPDF):
         self.set_font('Arial', 'B', 9)
         self.set_text_color(218, 165, 32)
         self.cell(0, 5, 'UNIDAD CONSCIENTE', 0, 1, 'C')
+        
         self.set_font('Arial', '', 8)
         self.set_text_color(50, 50, 50)
         self.cell(0, 5, 'Web: unidadconsciente.com', 0, 1, 'C', link=WEB_LINK)
@@ -193,7 +205,7 @@ class PDF(FPDF):
 def clean_text(text):
     if isinstance(text, str):
         text = text.replace("🟣", "").replace("🟢", "").replace("🟡", "").replace("🟠", "").replace("🔴", "")
-        text = text.replace("🔹", "-").replace("🧘", "").replace("⚡", "").replace("🌊", "")
+        text = text.replace("🔹", "").replace("🧘", "").replace("⚡", "").replace("🌊", "")
         return text.encode('latin-1', 'replace').decode('latin-1')
     return text
 
@@ -203,21 +215,54 @@ def draw_bar_chart(pdf, s, e, r):
     pdf.set_text_color(0, 0, 0)
     factor = 20 
     
-    # Somatica
     pdf.cell(30, 8, "Somatica:", 0, 0)
     pdf.set_fill_color(75, 0, 130)
     pdf.cell(s * factor, 6, f" {s}", 0, 1, 'L', fill=True)
     
-    # Energia
     pdf.cell(30, 8, "Energia:", 0, 0)
     pdf.set_fill_color(218, 165, 32)
     pdf.cell(e * factor, 6, f" {e}", 0, 1, 'L', fill=True)
     
-    # Regulacion
     pdf.cell(30, 8, "Regulacion:", 0, 0)
     pdf.set_fill_color(0, 128, 128)
     pdf.cell(r * factor, 6, f" {r}", 0, 1, 'L', fill=True)
     pdf.ln(5)
+
+def draw_levels_table(pdf):
+    # Título
+    pdf.set_font("Arial", "B", 11)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 10, "DESCRIPCION NIVELES S.E.R.", ln=True, align='L')
+    
+    # Encabezado
+    pdf.set_font("Arial", "B", 8)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_fill_color(75, 0, 130)
+    
+    pdf.cell(20, 8, "Rango", 1, 0, 'C', fill=True)
+    pdf.cell(45, 8, "Nivel", 1, 0, 'C', fill=True)
+    pdf.cell(0, 8, "Descripcion", 1, 1, 'C', fill=True)
+    
+    # Cuerpo
+    pdf.set_font("Arial", "", 8)
+    pdf.set_text_color(0, 0, 0)
+    
+    for rango, nivel, desc in NIVELES_DATA:
+        clean_d = clean_text(desc)
+        clean_n = clean_text(nivel)
+        
+        x_start = pdf.get_x()
+        y_start = pdf.get_y()
+        
+        pdf.set_xy(x_start + 65, y_start)
+        pdf.multi_cell(0, 5, clean_d, border=1)
+        y_end = pdf.get_y()
+        row_h = y_end - y_start
+        
+        pdf.set_xy(x_start, y_start)
+        pdf.cell(20, row_h, rango, 1, 0, 'C')
+        pdf.cell(45, row_h, clean_n, 1, 0, 'C')
+        pdf.set_xy(x_start, y_end)
 
 def generar_pdf(nombre, s, e, r, idx, estado, desc):
     pdf = PDF()
@@ -225,58 +270,43 @@ def generar_pdf(nombre, s, e, r, idx, estado, desc):
     pdf.set_auto_page_break(auto=True, margin=35)
     pdf.set_y(40)
     
+    # 1. Fecha sola a la derecha
     pdf.set_font("Arial", "", 10)
-    pdf.set_text_color(100, 100, 100)
-    clean_nombre = clean_text(nombre)
-    pdf.cell(0, 5, f"Usuario: {clean_nombre} | {datetime.now().strftime('%d/%m/%Y')}", ln=True, align='R')
+    pdf.set_text_color(0, 0, 0) # Negro
+    fecha_str = datetime.now().strftime('%d/%m/%Y')
+    pdf.cell(0, 5, f"{fecha_str}", ln=True, align='R') 
     pdf.ln(5)
 
-    pdf.set_font("Arial", "B", 14)
-    pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(0, 8, f"Hola {clean_nombre},")
-    pdf.ln(2)
+    # 2. Texto fluido y personal
+    clean_nombre = clean_text(nombre)
+    clean_estado = clean_text(estado)
+    clean_desc = clean_text(desc)
     
     pdf.set_font("Arial", "", 12)
-    pdf.write(5, "TU INDICE S.E.R. ES DE ")
-    pdf.set_font("Arial", "B", 14)
-    pdf.set_text_color(75, 0, 130)
-    pdf.write(5, f"{idx}/5.0")
-    pdf.set_font("Arial", "", 12)
-    pdf.set_text_color(0, 0, 0)
-    pdf.write(5, ", ES DECIR: ")
+    # Construcción del párrafo completo
+    texto_fluido = (
+        f"Hola {clean_nombre}, tu indice S.E.R. es de {idx}/5.0, es decir, {clean_estado}. "
+        f"Esto quiere decir que {clean_desc}"
+    )
+    
+    pdf.multi_cell(0, 6, texto_fluido)
     pdf.ln(10)
     
-    pdf.set_font("Arial", "B", 16)
-    pdf.set_text_color(218, 165, 32)
-    pdf.cell(0, 10, clean_text(estado), ln=True, align='C')
-    
-    pdf.set_font("Arial", "", 11)
-    pdf.set_text_color(50, 50, 50)
-    pdf.multi_cell(0, 6, clean_text(desc), align='C')
-    
-    pdf.ln(10)
+    # 3. Barras
     draw_bar_chart(pdf, s, e, r)
     
+    # 4. Definiciones (Texto Negro)
     pdf.ln(5)
     pdf.set_font("Arial", "B", 10)
-    pdf.set_text_color(0, 0, 0)
+    pdf.set_text_color(0, 0, 0) # Negro Puro
     pdf.cell(0, 6, "DEFINICIONES:", ln=True)
     pdf.set_font("Arial", "", 9)
-    pdf.set_text_color(80, 80, 80)
+    pdf.set_text_color(0, 0, 0) # Negro Puro
     pdf.multi_cell(0, 5, clean_text(DEFINICIONES_SER))
     
+    # 5. Tabla Niveles
     pdf.ln(10)
-    pdf.set_font("Arial", "B", 11)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 10, "MAPA DE EVOLUCION:", ln=True, align='C')
-    
-    pdf.set_font("Arial", "", 9)
-    clean_mapa = clean_text(TABLA_NIVELES)
-    pdf.multi_cell(0, 5, clean_mapa, align='C')
-    
-    pdf.ln(5)
-    pdf.set_font("Arial", "I", 8)
-    pdf.cell(0, 5, f"Fecha de reporte: {datetime.now().strftime('%d/%m/%Y')}", ln=True, align='R')
+    draw_levels_table(pdf)
     
     return pdf.output(dest="S").encode("latin-1")
 
@@ -380,7 +410,7 @@ if modo == "📝 Índice S.E.R.":
         st.markdown("### 🗺️ Mapa de Niveles S.E.R.")
         st.markdown(f"""
         <table class="levels-table">
-          <tr><th style="background-color:{COLOR_MORADO}; color:white;">Nivel</th><th style="background-color:{COLOR_MORADO}; color:white;">Descripción</th></tr>
+          <tr><th style="background-color:{COLOR_MORADO}; color: white !important;">Nivel</th><th style="background-color:{COLOR_MORADO}; color: white !important;">Descripción</th></tr>
           <tr><td>🟣 ALTA SINTERGIA<br>(4.6 - 5.0)</td><td>Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos.</td></tr>
           <tr><td>🟢 ZONA DE PRESENCIA<br>(4.0 - 4.5)</td><td>Posees la flexibilidad interna para sentir la intensidad de la vida y retornar a tu centro.</td></tr>
           <tr><td>🟡 MODO RESISTENCIA<br>(3.0 - 3.9)</td><td>Funcionalidad a través del esfuerzo y tensión sostenida.</td></tr>
@@ -426,7 +456,8 @@ if modo == "📝 Índice S.E.R.":
              prom_s = df_com['Score_Somatica'].mean()
              prom_e = df_com['Score_Energia'].mean()
              prom_r = df_com['Score_Regulacion'].mean()
-             fig.add_trace(go.Scatterpolar(r=[prom_s,prom_e,prom_r,prom_s], theta=['SOM','ENE','REG','SOM'], fill='toself', name='COMUNIDAD', line_color='gray', opacity=0.5))
+             # COMUNIDAD OSCURA
+             fig.add_trace(go.Scatterpolar(r=[prom_s,prom_e,prom_r,prom_s], theta=['SOM','ENE','REG','SOM'], fill='toself', name='COMUNIDAD', line_color='#444444', opacity=0.7))
         
         fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0,5])), height=250, margin=dict(t=20,b=20))
         st.plotly_chart(fig, use_container_width=True)
@@ -447,10 +478,10 @@ if modo == "📝 Índice S.E.R.":
         pdf_bytes = generar_pdf(nombre, s, e, r, idx, tit, desc)
         c_d1, c_d2 = st.columns(2)
         with c_d1:
-            st.download_button("📥 Descargar Reporte (PDF)", pdf_bytes, f"Reporte_{nombre}.pdf", "application/pdf")
+            st.download_button("📥 Descargar Reporte (PDF)", pdf_bytes, f"Indice_SER_{nombre}.pdf", "application/pdf")
         with c_d2:
-            # MENSAJE EXACTO SOLICITADO
-            msg = f"Hola, soy {nombre}, este fue mi resultado {idx}, {tit}, quiero subir mi indice.."
+            # WARM WHATSAPP
+            msg = f"Hola, soy {nombre}. Acabo de recibir mi Índice S.E.R. de {idx} ({tit}). Me gustaría saber cómo puedo elevar mi bienestar y unirme a la comunidad."
             link_wa = f"https://wa.me/{WHATSAPP}?text={urllib.parse.quote(msg)}"
             st.link_button("🟢 Quiero mejorar mi ÍNDICE S.E.R.", link_wa, type="primary")
 
