@@ -1,365 +1,298 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
+import plotly.express as px  # <--- RECUPERAMOS ESTO PARA LAS BARRAS Y LINEAS
 from datetime import datetime
-import pytz # Zona horaria CDMX
+import pytz
 import gspread
 from google.oauth2.service_account import Credentials
+from fpdf import FPDF
+import urllib.parse
+# IMPORTAMOS TUS TEXTOS
+from textos_legales import AVISO_LEGAL_COMPLETO, DEFINICIONES_SER, TABLA_NIVELES
 
 # ==========================================
-# 1. CONFIGURACIÓN ESTÉTICA Y BRANDING
+# 1. CONFIGURACIÓN
 # ==========================================
-st.set_page_config(page_title="Monitor S.E.R. | Anahat", page_icon="🧘", layout="centered")
+st.set_page_config(page_title="Indice S.E.R.", page_icon="🫀", layout="centered")
 
-st.markdown("""<style>
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
-    .stMetric {text-align: center;}
-    .big-font {font-size:20px !important; font-weight: bold; color: #8A2BE2;}
-    
-    /* Estilo para la Tabla de Niveles */
-    .levels-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 20px;
-        font-size: 14px;
-        font-family: sans-serif;
+# 🔐 TUS DATOS
+CLAVE_AULA = "ANAHAT2026"
+ID_SHEET = "1y5FIw_mvGUSKwhc41JaB01Ti6_93dBJmfC1BTpqrvHw"
+WHATSAPP = "525512345678"
+
+st.markdown("""
+<style>
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
+    h1 {color: #4B0082; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; text-align: center;}
+    .stButton>button {
+        border-radius: 20px; background-color: white; 
+        color: #4B0082; border: 1px solid #4B0082; font-weight: bold;
     }
-    .levels-table th {
-        background-color: #f0f2f6;
-        padding: 12px;
-        text-align: left;
-        border-bottom: 2px solid #000; 
-        color: #000000 !important; /* TEXTO NEGRO FORZADO EN ENCABEZADOS */
-        font-weight: bold;
-        text-transform: uppercase;
-        font-size: 13px;
-    }
-    .levels-table td {
-        padding: 12px;
-        border-bottom: 1px solid #eee;
-        color: #FFFFFF !important; /* CAMBIO A BLANCO PARA EL TEXTO DEL CUERPO */
-        vertical-align: top;
-    }
-    
-    .scale-legend {
-        background-color: #e6e6fa; 
-        color: #000000 !important; 
-        padding: 15px; 
-        border-radius: 10px; 
-        text-align: center; 
-        font-weight: bold; 
-        font-size: 16px;
-        margin-bottom: 25px;
-        border: 1px solid #dcdcdc;
-    }
-</style>""", unsafe_allow_html=True)
+    .stButton>button:hover {background-color: #4B0082; color: white;}
+    .stAlert {background-color: #f8f9fa; border-left: 4px solid #4B0082; color: #333;}
+</style>
+""", unsafe_allow_html=True)
 
 # ==========================================
-# 2. CONEXIÓN A GOOGLE SHEETS
+# 2. CONEXIÓN DB
 # ==========================================
+@st.cache_resource
 def conectar_db():
-    SHEET_ID = "1y5FIw_mvGUSKwhc41JaB01Ti6_93dBJmfC1BTpqrvHw"
-    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    
     try:
-        creds_dict = dict(st.secrets["gcp_service_account"])
-        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
         client = gspread.authorize(creds)
-        sheet = client.open_by_key(SHEET_ID).worksheet("DB_Anahat_Clientes")
-        return sheet
+        return client.open_by_key(ID_SHEET)
     except Exception as e:
-        st.error(f"⚠️ Error de conexión: {e}")
-        st.stop()
+        st.error(f"Error de conexión: {e}")
+        return None
 
-# ==========================================
-# 3. LÓGICA MATEMÁTICA (ESCALA 1-5)
-# ==========================================
-def calcular_ser_v2(respuestas):
-    # A. ENERGÍA (Inversas: 6 - x)
-    raw_ene = [respuestas['e1'], respuestas['e2'], respuestas['e3'], respuestas['e4']]
-    score_ene = sum([(6 - x) for x in raw_ene]) / 4
-    
-    # B. REGULACIÓN (Inversas: 6 - x)
-    raw_reg = [respuestas[f'r{i}'] for i in range(1, 9)]
-    score_reg = sum([(6 - x) for x in raw_reg]) / 8
-    
-    # C. SOMÁTICA (Directas: x)
-    raw_som = [respuestas[f's{i}'] for i in range(1, 18)]
-    score_som = sum(raw_som) / 17
-    
-    # Promedio Final
-    indice = (score_ene + score_reg + score_som) / 3
-    
-    return round(score_som, 2), round(score_ene, 2), round(score_reg, 2), round(indice, 2)
-
-def obtener_diagnostico(indice):
-    if indice < 2.0:
-        titulo = "🔴 ZONA DE DESCONEXIÓN"
-        desc = "Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional."
-    elif indice < 3.0:
-        titulo = "🟠 ZONA REACTIVA"
-        desc = "Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad."
-    elif indice < 4.0:
-        titulo = "🟡 MODO RESISTENCIA"
-        desc = "Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente."
-    elif indice < 4.6:
-        titulo = "🟢 ZONA DE PRESENCIA"
-        desc = "Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza."
-    else:
-        titulo = "🟣 ALTA SINTERGIA"
-        desc = "Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa."
-    return titulo, desc
-
-# ==========================================
-# 4. GRÁFICAS
-# ==========================================
-def graficar_radar(val_som, val_ene, val_reg, prom_som, prom_ene, prom_reg):
-    fig = go.Figure()
-    # TÚ
-    fig.add_trace(go.Scatterpolar(
-        r=[val_som, val_ene, val_reg], 
-        theta=['SOMÁTICA', 'ENERGÍA', 'REGULACIÓN'], 
-        fill='toself', name='TÚ', line_color='#8A2BE2'
-    ))
-    # COMUNIDAD
-    if prom_som > 0:
-        fig.add_trace(go.Scatterpolar(
-            r=[prom_som, prom_ene, prom_reg], 
-            theta=['SOMÁTICA', 'ENERGÍA', 'REGULACIÓN'], 
-            fill='toself', name='COMUNIDAD', line_color='gray', opacity=0.3, line_dash='dot'
-        ))
-    
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 5.2],
-                tickvals=[1, 2, 3, 4, 5],
-                ticktext=['1', '2', '3', '4', '5'],
-                tickfont=dict(color="black", size=14, family="Arial Black")
-            )
-        ),
-        showlegend=True,
-        height=350,
-        margin=dict(t=20, b=20, l=40, r=40)
-    )
-    return fig
-
-def graficar_barra_comparativa(titulo, valor_usuario, valor_grupo, color_barra):
-    df_chart = pd.DataFrame({
-        'Entidad': ['TÚ', 'COMUNIDAD'],
-        'Puntaje': [valor_usuario, valor_grupo],
-        'Color': [color_barra, 'gray']
-    })
-    fig = px.bar(df_chart, x='Puntaje', y='Entidad', orientation='h', text='Puntaje', title=titulo, color='Color', color_discrete_map={color_barra: color_barra, 'gray': 'gray'})
-    fig.update_layout(xaxis=dict(range=[0, 5.5]), showlegend=False, height=180, margin=dict(l=20, r=20, t=30, b=20))
-    fig.update_traces(texttemplate='%{text:.1f}', textposition='outside')
-    return fig
-
-# ==========================================
-# 5. DASHBOARD DE RESULTADOS (STORYTELLING)
-# ==========================================
-def mostrar_dashboard_completo(df, email_usuario):
-    # 1. Limpieza de columnas
-    df.columns = [c.strip() for c in df.columns]
-    
-    if 'Email' not in df.columns:
-        st.error("Error leyendo la base de datos (Columna Email no encontrada).")
-        return
-
-    # 2. Convertir a números
-    cols_num = ['Score_Somatica', 'Score_Energia', 'Score_Regulacion', 'INDICE_TOTAL']
-    for c in cols_num:
-        if c in df.columns: df[c] = pd.to_numeric(df[c], errors='coerce')
-
-    # 3. FILTRAR DATOS VÁLIDOS PARA COMUNIDAD (Ignorar datos viejos > 5)
-    df_clean_comunidad = df[df['INDICE_TOTAL'] <= 5.5] # Margen de seguridad
-    
-    # 4. Datos del usuario
-    mis_datos = df[df['Email'] == email_usuario]
-    
-    if mis_datos.empty:
-        st.warning("No se encontraron datos.")
-        return
-
-    ultimo = mis_datos.iloc[-1]
-    idx_val = ultimo.get('INDICE_TOTAL', 0)
-    titulo, desc = obtener_diagnostico(idx_val)
-    
-    # 5. Calcular Promedios Comunidad (Solo de datos limpios)
-    promedio_comunidad = df_clean_comunidad['INDICE_TOTAL'].mean()
-    p_som = df_clean_comunidad['Score_Somatica'].mean()
-    p_ene = df_clean_comunidad['Score_Energia'].mean()
-    p_reg = df_clean_comunidad['Score_Regulacion'].mean()
-
-    # --- RENDERIZADO DEL DASHBOARD ---
-    st.divider()
-    
-    # 1. EDUCACIÓN (LAS 3 DIMENSIONES)
-    st.markdown("### 1. Las 3 Dimensiones del Ser")
-    c1, c2, c3 = st.columns(3)
-    with c1: 
-        st.info("**🧘 SOMÁTICA**\n\nEs la capacidad de tu sistema nervioso para percibir, traducir y habitar las señales internas de tu cuerpo como fuente primaria de sabiduría.")
-    with c2: 
-        st.info("**⚡ ENERGÍA**\n\nEs la cantidad de fuerza vital libre que tienes disponible para crear, expandirte y sostener tu propósito con claridad.")
-    with c3: 
-        st.info("**🌊 REGULACIÓN**\n\nEs tu capacidad biológica para transitar los retos de la vida y retornar a la seguridad, al centro y al equilibrio de forma natural.")
-
-    # 2. CONTEXTO (TABLA DE NIVELES)
-    st.markdown("### 2. Los 5 Estados del Ser")
-    st.markdown("""
-    <table class="levels-table">
-      <tr><th>Nivel</th><th>Estado</th><th>Descripción</th></tr>
-      <tr><td>🟣 4.6 - 5.0</td><td><b>ALTA SINTERGIA</b></td><td>Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa.</td></tr>
-      <tr><td>🟢 4.0 - 4.5</td><td><b>ZONA DE PRESENCIA</b></td><td>Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza.</td></tr>
-      <tr><td>🟡 3.0 - 3.9</td><td><b>MODO RESISTENCIA</b></td><td>Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente.</td></tr>
-      <tr><td>🟠 2.0 - 2.9</td><td><b>ZONA REACTIVA</b></td><td>Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad.</td></tr>
-      <tr><td>🔴 1.0 - 1.9</td><td><b>ZONA DE DESCONEXIÓN</b></td><td>Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional.</td></tr>
-    </table>
-    """, unsafe_allow_html=True)
-
-    # 3. KPI Principal
-    st.markdown("### 3. Tu Diagnóstico Actual")
-    col_kpi1, col_kpi2 = st.columns([1, 2])
-    with col_kpi1:
-        st.markdown(f"<h1 style='text-align: center; color: #8A2BE2; font-size: 60px; margin-bottom: 0px;'>{idx_val}</h1>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align: center; color: gray; font-weight: bold;'>Promedio Comunidad: {promedio_comunidad:.2f}</p>", unsafe_allow_html=True)
-    
-    with col_kpi2:
-        st.success(f"**{titulo}**")
-        st.write(desc)
-    
-    # 4. GRÁFICAS
-    st.markdown("### 4. Tu Mapa vs La Comunidad")
-    
-    # Radar
-    fig_radar = graficar_radar(
-        ultimo['Score_Somatica'], ultimo['Score_Energia'], ultimo['Score_Regulacion'], 
-        p_som, p_ene, p_reg
-    )
-    st.plotly_chart(fig_radar, use_container_width=True)
-    
-    # Barras
-    gc1, gc2, gc3 = st.columns(3)
-    with gc1: st.plotly_chart(graficar_barra_comparativa("Somática", ultimo['Score_Somatica'], p_som, "#FF69B4"), use_container_width=True)
-    with gc2: st.plotly_chart(graficar_barra_comparativa("Energía", ultimo['Score_Energia'], p_ene, "#FFD700"), use_container_width=True)
-    with gc3: st.plotly_chart(graficar_barra_comparativa("Regulación", ultimo['Score_Regulacion'], p_reg, "#00BFFF"), use_container_width=True)
-    
-    # Evolución
-    if len(mis_datos) > 1:
-        st.divider()
-        st.markdown("### 📈 TU EVOLUCIÓN")
-        fig_line = px.line(mis_datos, x='Fecha', y='INDICE_TOTAL', markers=True)
-        fig_line.update_layout(yaxis=dict(range=[1, 5.5]))
-        fig_line.update_traces(line_color='#8A2BE2', line_width=4)
-        st.plotly_chart(fig_line, use_container_width=True)
-
-# ==========================================
-# 6. APP PRINCIPAL
-# ==========================================
-# st.image("logo.png", width=150) # Descomentar cuando tengas el logo
-
-# --- ENCABEZADO TIPO MEMBRETE ---
-st.markdown("<h4 style='text-align: left; color: gray;'>Unidad Consciente</h4>", unsafe_allow_html=True)
-
-# --- TÍTULO PRINCIPAL ---
-st.title("Índice S.E.R. (Somática, Energía, Regulación) | Comunidad Anahat")
-
-try: sheet = conectar_db()
-except: pass
-
-# --- INICIO DEL FORMULARIO ---
-with st.form("test_ser_v2"):
-    
-    # 1. NOMBRE (Primero)
-    nombre_input = st.text_input("Tu Nombre Completo:")
-    
-    st.markdown("""
-    <div class="scale-legend">
-    ESCALA: 1 = Nunca | 2 = Casi nunca | 3 = A veces | 4 = Frecuentemente | 5 = Siempre
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 2. PREGUNTAS
-    st.info("⚡ ENERGÍA")
-    e1 = st.slider("1. ¿Tienes insomnio con frecuencia?", 1, 5, 1)
-    e2 = st.slider("2. ¿Tienes dificultad para concentrarte?", 1, 5, 1)
-    e3 = st.slider("3. ¿Sientes falta de aire frecuentemente?", 1, 5, 1)
-    e4 = st.slider("4. ¿Te dan infecciones respiratorias con frecuencia?", 1, 5, 1)
-    
-    st.info("🌊 REGULACIÓN")
-    r1 = st.slider("1. ¿Sientes dolor de espalda?", 1, 5, 1)
-    r2 = st.slider("2. ¿Tienes problemas estomacales?", 1, 5, 1)
-    r3 = st.slider("3. ¿Experimentas ataques de pánico?", 1, 5, 1)
-    r4 = st.slider("4. ¿Tienes dolores de cabeza?", 1, 5, 1)
-    r5 = st.slider("5. ¿Suspiras frecuentemente?", 1, 5, 1)
-    r6 = st.slider("6. ¿Ignoras la tensión física hasta que es severa?", 1, 5, 1)
-    r7 = st.slider("7. ¿Te distraes de las sensaciones de malestar?", 1, 5, 1)
-    r8 = st.slider("8. ¿Te preocupas apenas sientes una molestia?", 1, 5, 1)
-    
-    st.info("🧘 SOMÁTICA")
-    s1 = st.slider("1. ¿Notas cuando te sientes incómodo en tu cuerpo?", 1, 5, 1)
-    s2 = st.slider("2. ¿Notas cambios en mi respiración?", 1, 5, 1)
-    s3 = st.slider("3. ¿Puedes prestar atención a tu respiración sin distraerte?", 1, 5, 1)
-    s4 = st.slider("4. ¿Puedes mantener consciencia interna aunque haya movimiento alrededor?", 1, 5, 1)
-    s5 = st.slider("5. ¿Al conversar, puedes prestar atención a tu postura?", 1, 5, 1)
-    s6 = st.slider("6. ¿Puedes volver a concentrarte en tu cuerpo si te distraes?", 1, 5, 1)
-    s7 = st.slider("7. ¿Puedes redirigir tu atención de pensamientos a sensaciones?", 1, 5, 1)
-    s8 = st.slider("8. ¿Mantienes consciencia del cuerpo aunque una parte duela?", 1, 5, 1)
-    s9 = st.slider("9. ¿Eres capaz de enfocarte en tu cuerpo como un todo?", 1, 5, 1)
-    s10 = st.slider("10. ¿Notas cómo cambia tu cuerpo cuando estás enojado?", 1, 5, 1)
-    s11 = st.slider("11. ¿Notas que tu cuerpo se siente diferente tras una experiencia pacífica?", 1, 5, 1)
-    s12 = st.slider("12. ¿Notas que tu respiración se libera cuando estás cómodo?", 1, 5, 1)
-    s13 = st.slider("13. ¿Al sentirte abrumado, encuentras un lugar de calma dentro de ti?", 1, 5, 1)
-    s14 = st.slider("14. ¿Al sentirte tenso, usas tu respiración para reducir tensión?", 1, 5, 1)
-    s15 = st.slider("15. ¿Cuando estás estresado, sabes relajarte físicamente?", 1, 5, 1)
-    s16 = st.slider("16. ¿Respetas lo que tu cuerpo pide (descanso, comida)?", 1, 5, 1)
-    s17 = st.slider("17. ¿Al tomar decisiones, consultas tus sensaciones corporales?", 1, 5, 1)
-    
-    st.divider()
-    
-    # 3. CORREO (Al final)
-    email_input = st.text_input("Tu Correo Electrónico (Para guardar tu historial):").strip().lower()
-    
-    submitted = st.form_submit_button("CALCULAR ÍNDICE")
-    
-    if submitted:
-        if not nombre_input or not email_input:
-            st.error("⚠️ Por favor ingresa tu Nombre y Correo para ver tus resultados.")
-        else:
-            # Cálculos
-            datos = {
-                'e1': e1, 'e2': e2, 'e3': e3, 'e4': e4,
-                'r1': r1, 'r2': r2, 'r3': r3, 'r4': r4, 'r5': r5, 'r6': r6, 'r7': r7, 'r8': r8,
-                's1': s1, 's2': s2, 's3': s3, 's4': s4, 's5': s5, 's6': s6, 's7': s7, 's8': s8, 's9': s9,
-                's10': s10, 's11': s11, 's12': s12, 's13': s13, 's14': s14, 's15': s15, 's16': s16, 's17': s17
-            }
-            
-            s_s, s_e, s_r, idx = calcular_ser_v2(datos)
-            titulo, desc = obtener_diagnostico(idx)
-            
-            # Zona Horaria México
-            zona_mx = pytz.timezone('America/Mexico_City')
-            fecha = datetime.now(zona_mx).strftime("%Y-%m-%d")
-            
-            # Guardar en Sheet
-            try:
-                sheet.append_row([
-                    fecha, email_input, nombre_input, 
-                    s_s, s_e, s_r, idx, titulo
-                ])
-                st.toast("✅ Datos guardados con éxito")
-            except Exception as e:
-                st.error(f"Error guardando: {e}")
-
-# --- MOSTRAR REPORTE INMEDIATAMENTE SI YA HAY DATOS ---
-if email_input:
+def verificar_privacidad(email):
+    client = conectar_db()
+    if not client or not email: return False
     try:
-        data = sheet.get_all_records()
-        df = pd.DataFrame(data)
+        ws = client.worksheet("DB_Anahat_Clientes")
+        records = ws.get_all_records()
+        df = pd.DataFrame(records)
+        df.columns = df.columns.str.strip()
+        email_clean = email.strip().lower()
+        if 'Email' in df.columns and 'Privacidad_Aceptada' in df.columns:
+            usuario = df[df['Email'].astype(str).str.strip().str.lower() == email_clean]
+            if not usuario.empty:
+                estado = str(usuario.iloc[-1]['Privacidad_Aceptada']).strip().upper()
+                if estado == "SI": return True
+    except: return False
+    return False
+
+def guardar_completo(datos):
+    client = conectar_db()
+    if client:
+        try:
+            ws = client.worksheet("DB_Anahat_Clientes")
+            ws.append_row(datos)
+            return True
+        except Exception as e:
+            st.error(f"Error al guardar: {e}")
+            return False
+
+def obtener_historial(email):
+    """Recupera los datos previos de este usuario para la gráfica de evolución"""
+    client = conectar_db()
+    if not client or not email: return pd.DataFrame()
+    try:
+        ws = client.worksheet("DB_Anahat_Clientes")
+        records = ws.get_all_records()
+        df = pd.DataFrame(records)
+        df.columns = df.columns.str.strip()
+        
+        # Filtrar por email
+        if 'Email' in df.columns:
+            email_clean = email.strip().lower()
+            historial = df[df['Email'].astype(str).str.strip().str.lower() == email_clean]
+            return historial
+    except: return pd.DataFrame()
+    return pd.DataFrame()
+
+def obtener_videos():
+    client = conectar_db()
+    if client:
+        try:
+            ws = client.worksheet("VIDEOS_AULA")
+            records = ws.get_all_records()
+            df = pd.DataFrame(records)
+            if not df.empty and 'Fecha' in df.columns:
+                df['Fecha'] = pd.to_datetime(df['Fecha'])
+                df = df.sort_values(by='Fecha', ascending=False)
+            return df
+        except: pass
+    return pd.DataFrame()
+
+# ==========================================
+# 3. LÓGICA CIENTÍFICA (INVERSA)
+# ==========================================
+def calcular_ser(resp):
+    # Energía y Regulación (Síntomas) -> Se invierten (6-x)
+    # Somática (Capacidades) -> Se mantiene directo (x)
+    ene = sum([6-x for x in resp[0:4]]) / 4
+    reg = sum([6-x for x in resp[4:12]]) / 8
+    som = sum([x for x in resp[12:29]]) / 17
+    idx = (ene + reg + som) / 3
+    return round(som,1), round(ene,1), round(reg,1), round(idx,1)
+
+def interpretar(idx):
+    if idx < 2.0: return "🔴 ZONA DE DESCONEXIÓN", "Sistema inmovilizado. Urge regulación."
+    elif idx < 3.0: return "🟠 ZONA REACTIVA", "Sistema en defensa y alerta perpetua."
+    elif idx < 4.0: return "🟡 MODO RESISTENCIA", "Funcionalidad mediante tensión."
+    elif idx < 4.6: return "🟢 ZONA DE PRESENCIA", "Flexibilidad y retorno al equilibrio."
+    else: return "🟣 ALTA SINTERGIA", "Coherencia total cerebro-corazón."
+
+# ==========================================
+# 4. PDF
+# ==========================================
+def generar_pdf(nombre, s, e, r, idx, estado):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 20)
+    pdf.set_text_color(75, 0, 130)
+    pdf.cell(0, 15, "INDICE S.E.R. | UNIDAD CONSCIENTE", ln=True, align='C')
+    
+    pdf.ln(5)
+    pdf.set_font("Arial", "", 10)
+    pdf.set_text_color(50, 50, 50)
+    pdf.multi_cell(0, 5, DEFINICIONES_SER)
+    pdf.ln(5)
+    
+    pdf.set_font("Arial", "", 12)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 10, f"Usuario: {nombre} | {datetime.now().strftime('%d/%m/%Y')}", ln=True, align='C')
+    
+    pdf.ln(5)
+    pdf.set_font("Arial", "B", 18)
+    pdf.cell(0, 10, f"TU ÍNDICE: {idx}/5.0", ln=True, align='C')
+    pdf.set_font("Arial", "B", 14)
+    pdf.set_text_color(75, 0, 130)
+    pdf.cell(0, 10, f"{estado}", ln=True, align='C')
+    
+    pdf.ln(5)
+    pdf.set_font("Arial", "", 12)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 8, f"   - Somática (Sentir): {s}", ln=True, align='C')
+    pdf.cell(0, 8, f"   - Energía (Hacer): {e}", ln=True, align='C')
+    pdf.cell(0, 8, f"   - Regulación (Freno): {r}", ln=True, align='C')
+    
+    pdf.ln(15)
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(0, 10, "MAPA DE EVOLUCIÓN (Referencia):", ln=True)
+    pdf.set_font("Arial", "", 9)
+    pdf.set_text_color(80, 80, 80)
+    pdf.multi_cell(0, 5, TABLA_NIVELES)
+    
+    return pdf.output(dest="S").encode("latin-1")
+
+# ==========================================
+# 5. INTERFAZ
+# ==========================================
+with st.sidebar:
+    st.markdown("### 🫀 Menú")
+    modo = st.radio("", ["📝 Diagnóstico", "🧘 Aula Virtual"], label_visibility="collapsed")
+    st.divider()
+    acceso = False
+    if modo == "🧘 Aula Virtual":
+        pwd = st.text_input("Clave de Acceso:", type="password")
+        if pwd == CLAVE_AULA: acceso = True
+
+if modo == "📝 Diagnóstico":
+    st.title("Indice S.E.R.")
+    
+    st.info(DEFINICIONES_SER.replace("🔹", "**").replace(":", "**:") )
+    
+    if 'email_ok' not in st.session_state: st.session_state.email_ok = False
+    
+    with st.form("test_ser"):
+        c1, c2 = st.columns(2)
+        nombre = c1.text_input("Nombre")
+        email = c2.text_input("Email").strip().lower()
+        
+        st.caption("Responde: 1 (Nunca) - 5 (Siempre)")
+        
+        st.subheader("⚡ Energía")
+        r_e = [st.slider(q,1,5,1) for q in ["¿Tienes insomnio con frecuencia?", "¿Tienes dificultad para concentrarte?", "¿Sientes falta de aire frecuentemente?", "¿Te dan infecciones respiratorias con frecuencia?"]]
+        st.subheader("🌊 Regulación")
+        r_r = [st.slider(q,1,5,1) for q in ["¿Sientes dolor de espalda?", "¿Tienes problemas estomacales?", "¿Experimentas ataques de pánico?", "¿Tienes dolores de cabeza?", "¿Suspiros frecuentemente?", "¿Ignoras la tensión física hasta que es severa?", "¿Te distraes de las sensaciones de malestar?", "¿Te preocupas apenas sientes una molestia?"]]
+        st.subheader("🧘 Somática")
+        r_s = [st.slider(q,1,5,1) for q in ["¿Notas cuando te sientes incómodo en tu cuerpo?", "¿Notas cambios en mi respiración?", "¿Puedes prestar atención a tu respiración sin distraerte?", "¿Puedes mantener consciencia interna aunque haya movimiento alrededor?", "¿Al conversar, puedes prestar atención a tu postura?", "¿Puedes volver a concentrarte en tu cuerpo si te distraes?", "¿Puedes redirigir tu atención de pensamientos a sensaciones?", "¿Mantienes consciencia del cuerpo aunque una parte duela?", "¿Eres capaz de enfocarte en tu cuerpo como un todo?", "¿Notas cómo cambia tu cuerpo cuando estás enojado?", "¿Notas que tu cuerpo se siente diferente tras una experiencia pacífica?", "¿Notas que tu respiración se libera cuando estás cómodo?", "¿Al sentirte abrumado, encuentras un lugar de calma dentro de ti?", "¿Al sentirte tenso, usas tu respiración para reducir tensión?", "¿Cuando estás estresado, sabes relajarte físicamente?", "¿Respetas lo que tu cuerpo pide (descanso, comida)?", "¿Al tomar decisiones, consultas tus sensaciones corporales?"]]
+        
+        st.markdown("---")
+        
+        ya_acepto = False
+        if email: ya_acepto = verificar_privacidad(email)
+        acepto_check = True
+        priv_val = "SI"
+        
+        if ya_acepto:
+            st.success(f"Hola de nuevo {nombre}. Términos verificados.")
+        else:
+            st.warning("⚠️ Acción Requerida")
+            with st.expander("📄 Leer Aviso de Privacidad y Términos"):
+                st.markdown(AVISO_LEGAL_COMPLETO)
+            acepto_check = st.checkbox("He leído y acepto el Aviso de Privacidad y Términos.")
+            priv_val = "SI" if acepto_check else "NO"
+
+        enviar = st.form_submit_button("🏁 OBTENER INDICE S.E.R.")
+    
+    if enviar:
+        if not nombre or not email:
+            st.error("Por favor completa nombre y email.")
+        elif not ya_acepto and not acepto_check:
+            st.error("Debes aceptar el Aviso de Privacidad.")
+        else:
+            todas = r_e + r_r + r_s
+            s, e, r, idx = calcular_ser(todas)
+            tit, desc = interpretar(idx)
+            fecha = datetime.now(pytz.timezone('America/Mexico_City')).strftime("%Y-%m-%d")
+            
+            # GUARDAR
+            datos = [fecha, email, nombre, s, e, r, idx, tit] + todas + [priv_val]
+            
+            if guardar_completo(datos):
+                st.balloons()
+                
+                # --- DASHBOARD VISUAL (LO QUE PEDISTE) ---
+                
+                # 1. KPI y RADAR
+                c_g, c_t = st.columns([1,2])
+                with c_g:
+                    fig = go.Figure(go.Scatterpolar(r=[s,e,r,s], theta=['SOM','ENE','REG','SOM'], fill='toself', line_color='#4B0082'))
+                    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0,5])), showlegend=False, height=200, margin=dict(t=20,b=20,l=20,r=20))
+                    st.plotly_chart(fig, use_container_width=True)
+                with c_t:
+                    st.subheader(tit)
+                    st.write(desc)
+                
+                # 2. GRÁFICA DE BARRAS (LAS 3 DIMENSIONES)
+                st.markdown("##### 📊 Desglose por Dimensión")
+                df_bar = pd.DataFrame({'Dimensión':['Somática','Energía','Regulación'], 'Puntaje':[s,e,r]})
+                fig_bar = px.bar(df_bar, x='Puntaje', y='Dimensión', orientation='h', color='Dimensión', color_discrete_sequence=['#4B0082'])
+                fig_bar.update_layout(height=150, xaxis=dict(range=[0,5.5]), margin=dict(t=0,b=0,l=0,r=0))
+                st.plotly_chart(fig_bar, use_container_width=True)
+
+                # 3. EVOLUCIÓN (SI HAY HISTORIAL)
+                historial = obtener_historial(email)
+                if len(historial) > 1:
+                    st.markdown("##### 📈 Tu Evolución")
+                    # Asegurar que la fecha sea datetime
+                    historial['Fecha'] = pd.to_datetime(historial['Fecha'])
+                    historial = historial.sort_values('Fecha')
+                    fig_line = px.line(historial, x='Fecha', y='INDICE_TOTAL', markers=True, title="Histórico de Progreso")
+                    fig_line.update_traces(line_color='#4B0082')
+                    fig_line.update_layout(yaxis=dict(range=[1,5.5]))
+                    st.plotly_chart(fig_line, use_container_width=True)
+
+                # 4. TABLA DE NIVELES (CONTEXTO)
+                with st.expander("ℹ️ Ver Mapa de Niveles Completo"):
+                    st.markdown(TABLA_NIVELES)
+
+                # 5. ENTREGABLES
+                st.divider()
+                pdf_bytes = generar_pdf(nombre, s, e, r, idx, tit)
+                c_d1, c_d2 = st.columns(2)
+                with c_d1:
+                    st.download_button("📥 Descargar Reporte (PDF)", pdf_bytes, f"Reporte_{nombre}.pdf", "application/pdf")
+                with c_d2:
+                    msg = f"Hola, soy {nombre}. Mi índice S.E.R. es {idx} ({tit}). Quiero unirme a la comunidad y subir mi índice."
+                    link_wa = f"https://wa.me/{WHATSAPP}?text={urllib.parse.quote(msg)}"
+                    st.link_button("🟢 Unirme a la Comunidad (WhatsApp)", link_wa, type="primary")
+
+elif modo == "🧘 Aula Virtual":
+    st.title("Aula Virtual")
+    if acceso:
+        df = obtener_videos()
         if not df.empty:
-            mostrar_dashboard_completo(df, email_input)
-    except Exception as e:
-        # Silencioso si no hay conexión o datos
-        pass
+            for i, row in df.iterrows():
+                f_str = str(row['Fecha'])[:10]
+                with st.expander(f"📅 {f_str} | {row['Titulo']}", expanded=(i==0)):
+                    st.write(row.get('Descripcion',''))
+                    st.video(row['Link'])
+        else: st.info("No hay clases cargadas aún.")
+    else: st.warning("🔒 Ingresa tu clave en la barra lateral.")
