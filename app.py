@@ -122,39 +122,37 @@ def obtener_datos_comunidad():
     return pd.DataFrame()
 
 def verificar_privacidad(email):
-    # 1. Obtenemos datos frescos (gracias al ttl=0 en conectar_db)
+    # 1. Obtenemos datos frescos
     df = obtener_datos_comunidad()
     
-    # Si no hay datos o columnas, asumimos que no ha aceptado
-    if df.empty or 'Email' not in df.columns or 'Privacidad_Aceptada' not in df.columns:
+    # 2. Si no hay datos, pedimos aceptar
+    if df.empty:
+        return False
+
+    # 3. Limpieza de nombres de columnas (Quita espacios invisibles en el Excel)
+    df.columns = df.columns.str.strip()
+    
+    # Verificamos que existan las columnas necesarias
+    if 'Email' not in df.columns or 'Privacidad_Aceptada' not in df.columns:
         return False
         
-    # 2. Limpieza del correo ingresado (minúsculas y sin espacios)
+    # 4. Limpieza del correo ingresado (minúsculas y sin espacios)
     email_clean = email.strip().lower()
     
-    # 3. Filtramos TODO el historial de ese correo
-    # Convertimos la columna Email a string y limpiamos para asegurar coincidencia
+    # 5. Filtramos por correo (limpiando también la columna del Excel para asegurar coincidencia)
     mis_registros = df[df['Email'].astype(str).str.strip().str.lower() == email_clean]
     
-    # 4. Si nunca ha usado la app, debe aceptar
+    # Si nunca ha usado la app con este correo, debe aceptar
     if mis_registros.empty:
         return False
         
-    # 5. SOLUCIÓN AL BUCLE: Buscamos si AL MENOS UNA VEZ dijo "SI" en el pasado
-    # No importa si el último registro está vacío, si antes dijo SI, vale.
-    aceptados = mis_registros[mis_registros['Privacidad_Aceptada'].astype(str).str.strip().str.upper() == "SI"]
+    # 6. SOLUCIÓN AL BUCLE:
+    # Buscamos en TODO el historial si hay algún "SI", "Si", "si" o "Sí".
+    # .str.upper().str.startswith('S') detecta cualquier variante que empiece con S.
+    aceptados = mis_registros[mis_registros['Privacidad_Aceptada'].astype(str).str.strip().str.upper().str.startswith('S')]
     
     if not aceptados.empty:
-        return True # ¡Encontrado un SI histórico! Acceso concedido.
-        
-    return False
-        
-    # 5. Buscamos si AL MENOS UNA VEZ aceptó en el pasado
-    # Buscamos cualquier "SI" en su historial, no solo en la última fila
-    aceptados = mis_registros[mis_registros['Privacidad_Aceptada'].astype(str).str.strip().str.upper() == "SI"]
-    
-    if not aceptados.empty:
-        return True # ¡Encontramos un SI en el historial! Acceso concedido.
+        return True # ¡Encontró un registro positivo! Acceso concedido.
         
     return False
 
