@@ -93,19 +93,15 @@ h1 {{color: {COLOR_MORADO}; font-family: 'Helvetica Neue', sans-serif; font-weig
     unsafe_allow_html=True
 )
 
-# ==========================================
-# 3. CONEXIÓN DB (TTL=0)
-# ==========================================
 
-@st.cache_resource(ttl=0)
+
 # ==========================================
 # 3. CONEXIÓN DB (TTL=0)
 # ==========================================
 
 @st.cache_resource(ttl=0)
 def conectar_db():
-    import os
-    import json
+    
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
