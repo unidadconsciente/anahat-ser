@@ -735,29 +735,17 @@ def generar_pdf(nombre, s, e, r, idx, estado, desc):
 
 
 def mostrar_encabezado():
-
     col_logo, col_text = st.columns([1, 4])
-
     with col_logo:
-
         if os.path.exists("logo.png"):
-
             st.image("logo.png", width=80)
-
     with col_text:
-
         st.markdown(f"""
-
-        <div class="header-brand">UNIDAD CONSCIENTE</div>
-
-        <div class="header-links">
-
-            <a href="{WEB_LINK}" target="_blank">🌐 Web</a>
-
-            <a href="{INSTA_LINK}" target="_blank">📸 Instagram</a>
-
+        <div style="font-size: 24px; font-weight: bold; color: {COLOR_MORADO};">UNIDAD CONSCIENTE</div>
+        <div>
+            <a href="{WEB_LINK}" target="_blank" style="text-decoration: none; color: #666; margin-right: 15px;">🌐 Web</a>
+            <a href="{INSTA_LINK}" target="_blank" style="text-decoration: none; color: #666;">📸 Instagram</a>
         </div>
-
         """, unsafe_allow_html=True)
 
 
@@ -765,238 +753,227 @@ def mostrar_encabezado():
 # ==========================================
 
 # 6. INTERFAZ PRINCIPAL
-
 # ==========================================
 
 with st.sidebar:
 
     st.markdown("### 🫀 Menú")
 
-    modo = st.radio("", ["📝 Índice S.E.R.", "🧘 Aula Virtual"], label_visibility="collapsed")
+    modo = st.radio(
+        "",
+        ["📝 Índice S.E.R.", "🧘 Aula Virtual"],
+        label_visibility="collapsed"
+    )
 
     st.divider()
 
     acceso = False
 
     if modo == "🧘 Aula Virtual":
-
         pwd = st.text_input("Clave de Acceso:", type="password")
+        if pwd == CLAVE_AULA:
+            acceso = True
 
-        if pwd == CLAVE_AULA: acceso = True
 
-
-
+# ================================
+# ÍNDICE S.E.R.
+# ================================
 if modo == "📝 Índice S.E.R.":
 
     mostrar_encabezado()
-
     st.markdown("---")
 
-    
-
-    st.markdown("<h1>Indice S.E.R (Somática, Energía, Regulación)</h1>", unsafe_allow_html=True)
-
-    
+    st.markdown(
+        "<h1>Indice S.E.R (Somática, Energía, Regulación)</h1>",
+        unsafe_allow_html=True
+    )
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-
-        st.markdown(f'<div class="def-card" style="border-left: 4px solid {COLOR_MORADO}"><div class="def-title" style="color:{COLOR_MORADO}">🧘 SOMÁTICA</div><div class="def-body">Capacidad de percibir y traducir señales internas.</div></div>', unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div class="def-card" style="border-left: 4px solid {COLOR_MORADO}">
+                <div class="def-title" style="color:{COLOR_MORADO}">🧘 SOMÁTICA</div>
+                <div class="def-body">Capacidad de percibir y traducir señales internas.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
     with col2:
-
-        st.markdown(f'<div class="def-card" style="border-left: 4px solid {COLOR_DORADO}"><div class="def-title" style="color:{COLOR_DORADO}">⚡ ENERGÍA</div><div class="def-body">Fuerza vital disponible para crear y sostener.</div></div>', unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div class="def-card" style="border-left: 4px solid {COLOR_DORADO}">
+                <div class="def-title" style="color:{COLOR_DORADO}">⚡ ENERGÍA</div>
+                <div class="def-body">Fuerza vital disponible para crear y sostener.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
     with col3:
-
-        st.markdown(f'<div class="def-card" style="border-left: 4px solid {COLOR_AZUL}"><div class="def-title" style="color:{COLOR_AZUL}">🌊 REGULACIÓN</div><div class="def-body">Capacidad de retornar al equilibrio y la calma.</div></div>', unsafe_allow_html=True)
-
-    
+        st.markdown(
+            f"""
+            <div class="def-card" style="border-left: 4px solid {COLOR_AZUL}">
+                <div class="def-title" style="color:{COLOR_AZUL}">🌊 REGULACIÓN</div>
+                <div class="def-body">Capacidad de retornar al equilibrio y la calma.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
     st.divider()
 
-    
+    if "resultado_listo" not in st.session_state:
+        st.session_state.resultado_listo = False
 
-    if 'resultado_listo' not in st.session_state: st.session_state.resultado_listo = False
+    if "email_ok" not in st.session_state:
+        st.session_state.email_ok = False
 
-    if 'email_ok' not in st.session_state: st.session_state.email_ok = False
-
-    
-
+    # ================================
+    # FORMULARIO
+    # ================================
     with st.form("test_ser"):
 
-        c1, c2 = st.columns(2)
-
         nombre = st.text_input("Nombre")
-
         email = st.text_input("Email").strip().lower()
 
-        
-
-        st.markdown('<div class="scale-guide">1 = Nunca | 2 = Casi nunca | 3 = A veces | 4 = Frecuentemente | 5 = Siempre</div>', unsafe_allow_html=True)
-
-        
+        st.markdown(
+            '<div class="scale-guide">1 = Nunca | 2 = Casi nunca | 3 = A veces | 4 = Frecuentemente | 5 = Siempre</div>',
+            unsafe_allow_html=True
+        )
 
         st.subheader("⚡ Energía")
-
-        r_e = [st.slider(q,1,5,1) for q in ["¿Tienes insomnio con frecuencia?", "¿Tienes dificultad para concentrarte?", "¿Sientes falta de aire frecuentemente?", "¿Te dan infecciones respiratorias con frecuencia?"]]
+        r_e = [
+            st.slider(q, 1, 5, 1)
+            for q in [
+                "¿Tienes insomnio con frecuencia?",
+                "¿Tienes dificultad para concentrarte?",
+                "¿Sientes falta de aire frecuentemente?",
+                "¿Te dan infecciones respiratorias con frecuencia?"
+            ]
+        ]
 
         st.subheader("🌊 Regulación")
-
-        r_r = [st.slider(q,1,5,1) for q in ["¿Sientes dolor de espalda?", "¿Tienes problemas estomacales?", "¿Experimentas ataques de pánico?", "¿Tienes dolores de cabeza?", "¿Suspiros frecuentemente?", "¿Ignoras la tensión física hasta que es severa?", "¿Te distraes de las sensaciones de malestar?", "¿Te preocupas apenas sientes una molestia?"]]
+        r_r = [
+            st.slider(q, 1, 5, 1)
+            for q in [
+                "¿Sientes dolor de espalda?",
+                "¿Tienes problemas estomacales?",
+                "¿Experimentas ataques de pánico?",
+                "¿Tienes dolores de cabeza?",
+                "¿Suspiros frecuentemente?",
+                "¿Ignoras la tensión física hasta que es severa?",
+                "¿Te distraes de las sensaciones de malestar?",
+                "¿Te preocupas apenas sientes una molestia?"
+            ]
+        ]
 
         st.subheader("🧘 Somática")
-
-        r_s = [st.slider(q,1,5,1) for q in ["¿Notas cuando te sientes incómodo en tu cuerpo?", "¿Notas cambios en mi respiración?", "¿Puedes prestar atención a tu respiración sin distraerte?", "¿Puedes mantener consciencia interna aunque haya movimiento alrededor?", "¿Al conversar, puedes prestar atención a tu postura?", "¿Puedes volver a concentrarte en tu cuerpo si te distraes?", "¿Puedes redirigir tu atención de pensamientos a sensaciones?", "¿Mantienes consciencia del cuerpo aunque una parte duela?", "¿Eres capaz de enfocarte en tu cuerpo como un todo?", "¿Notas cómo cambia tu cuerpo cuando estás enojado?", "¿Notas que tu cuerpo se siente diferente tras una experiencia pacífica?", "¿Notas que tu respiración se libera cuando estás cómodo?", "¿Al sentirte abrumado, encuentras un lugar de calma dentro de ti?", "¿Al sentirte tenso, usas tu respiración para reducir tensión?", "¿Cuando estás estresado, sabes relajarte físicamente?", "¿Respetas lo que tu cuerpo pide (descanso, comida)?", "¿Al tomar decisiones, consultas tus sensaciones corporales?"]]
-
-        
+        r_s = [
+            st.slider(q, 1, 5, 1)
+            for q in [
+                "¿Notas cuando te sientes incómodo en tu cuerpo?",
+                "¿Notas cambios en tu respiración?",
+                "¿Puedes prestar atención a tu respiración sin distraerte?",
+                "¿Puedes mantener consciencia interna aunque haya movimiento alrededor?",
+                "¿Al conversar, puedes prestar atención a tu postura?",
+                "¿Puedes volver a concentrarte en tu cuerpo si te distraes?",
+                "¿Puedes redirigir tu atención de pensamientos a sensaciones?",
+                "¿Mantienes consciencia del cuerpo aunque una parte duela?",
+                "¿Eres capaz de enfocarte en tu cuerpo como un todo?",
+                "¿Notas cómo cambia tu cuerpo cuando estás enojado?",
+                "¿Notas que tu cuerpo se siente diferente tras una experiencia pacífica?",
+                "¿Notas que tu respiración se libera cuando estás cómodo?",
+                "¿Al sentirte abrumado, encuentras un lugar de calma dentro de ti?",
+                "¿Al sentirte tenso, usas tu respiración para reducir tensión?",
+                "¿Cuando estás estresado, sabes relajarte físicamente?",
+                "¿Respetas lo que tu cuerpo pide (descanso, comida)?",
+                "¿Al tomar decisiones, consultas tus sensaciones corporales?"
+            ]
+        ]
 
         st.markdown("---")
 
-        
-
-        ya_acepto = False
-
-        if email: ya_acepto = verificar_privacidad(email)
-
+        ya_acepto = verificar_privacidad(email) if email else False
         acepto_check = True
-
         priv_val = "SI"
 
-        
-
         if ya_acepto:
-
-            st.success(f"Hola de nuevo. Términos verificados.")
-
+            st.success("Hola de nuevo. Términos verificados.")
         else:
-
             st.warning("⚠️ Aviso de Privacidad")
-
             with st.expander("📄 Leer Aviso Legal"):
-
                 st.markdown(AVISO_LEGAL_COMPLETO)
-
             acepto_check = st.checkbox("He leído y acepto el Aviso de Privacidad.")
-
             priv_val = "SI" if acepto_check else "NO"
-
-
 
         enviar = st.form_submit_button("🏁 OBTENER INDICE S.E.R.")
 
-    
-
+    # ================================
+    # PROCESAMIENTO
+    # ================================
     if enviar:
+
         if not nombre or not email:
             st.error("Por favor completa nombre y email.")
+
         elif not ya_acepto and not acepto_check:
             st.error("Debes aceptar el Aviso de Privacidad.")
+
         else:
             todas = r_e + r_r + r_s
             s, e, r, idx = calcular_ser(todas)
             tit, desc = interpretar(idx)
-            fecha = datetime.now(pytz.timezone('America/Mexico_City')).strftime("%Y-%m-%d")
-            
+
+            fecha = datetime.now(
+                pytz.timezone("America/Mexico_City")
+            ).strftime("%Y-%m-%d")
+
             datos = [fecha, email, nombre, s, e, r, idx, tit] + todas + [priv_val]
             guardar_completo(datos)
-            
+
             st.session_state.resultado_listo = True
             st.session_state.res_datos = (nombre, s, e, r, idx, tit, desc)
 
-    # AQUÍ ESTÁ LA CORRECCIÓN DE IDENTACIÓN
+    # ================================
+    # RESULTADOS
+    # ================================
     if st.session_state.resultado_listo:
+
         nombre, s, e, r, idx, tit, desc = st.session_state.res_datos
 
         st.markdown("### 🗺️ Mapa de Niveles S.E.R.")
-        
-        # TABLA CON COLOR BLANCO REFORZADO AL 100%
-        st.markdown(f"""
-        <table style="width:100%; border-collapse: collapse;">
-          <thead>
-            <tr>
-              <th style="background-color:{COLOR_MORADO}; padding: 12px; text-align: left; border: 1px solid #eee;">
-                <span style="color: white !important; -webkit-text-fill-color: white !important; font-weight: bold;">Nivel</span>
-              </th>
-              <th style="background-color:{COLOR_MORADO}; padding: 12px; text-align: left; border: 1px solid #eee;">
-                <span style="color: white !important; -webkit-text-fill-color: white !important; font-weight: bold;">Descripción</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="padding: 12px; border: 1px solid #eee;">🟣 <b>ALTA SINTERGIA</b><br>(4.6 - 5.0)</td>
-              <td style="padding: 12px; border: 1px solid #eee;">Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa. Tienes una capacidad innata para volver al centro con total facilidad ante cualquier estímulo externo.</td>
-            </tr>
-            <tr>
-              <td style="padding: 12px; border: 1px solid #eee;">🟢 <b>ZONA DE PRESENCIA</b><br>(4.0 - 4.5)</td>
-              <td style="padding: 12px; border: 1px solid #eee;">Posees la flexibilidad interna para sentir la intensidad de la vida y retornar a tu centro mediante la práctica consciente, como la meditación o la respiración. Eres capaz de procesar el estrés sin que este se quede anclado en tu sistema.</td>
-            </tr>
-            <tr>
-              <td style="padding: 12px; border: 1px solid #eee;">🟡 <b>MODO RESISTENCIA</b><br>(3.0 - 3.9)</td>
-              <td style="padding: 12px; border: 1px solid #eee;">Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida. Ya aparecen signos claros de agotamiento y fatiga, pero todavía conservas la estructura necesaria para regresar al equilibrio con el descanso adecuado.</td>
-            </tr>
-            <tr>
-              <td style="padding: 12px; border: 1px solid #eee;">🟠 <b>ZONA REACTIVA</b><br>(2.0 - 2.9)</td>
-              <td style="padding: 12px; border: 1px solid #eee;">Operas bajo una química de defensa y alerta perpetua. El sistema nervioso está tan saturado que comienza a ser muy difícil regresar al centro por cuenta propia, predominando reacciones automáticas de supervivencia sobre la respuesta consciente.</td>
-            </tr>
-            <tr>
-              <td style="padding: 12px; border: 1px solid #eee;">🔴 <b>ZONA DE DESCONEXIÓN</b><br>(1.0 - 1.9)</td>
-              <td style="padding: 12px; border: 1px solid #eee;">Estado profundo de Burnout con sobreactivación constante que agota las reservas vitales. La autorregulación está gravemente comprometida; es un estado donde el sistema ya no responde al descanso ordinario y es muy probable que se necesite ayuda profesional para recuperar la salud.</td>
-            </tr>
-          </tbody>
-        </table>
-        """, unsafe_allow_html=True)
+
+        st.markdown(MAPA_SER_HTML, unsafe_allow_html=True)
 
         st.divider()
-
-
-        
-
-        st.divider()
-
-        
 
         df_com = obtener_datos_comunidad()
+        prom_total = df_com["Calculado_Total"].mean() if not df_com.empty else 0
 
-        if not df_com.empty:
+        c1, c2 = st.columns(2)
 
-            prom_total = df_com['Calculado_Total'].mean()
+        with c1:
+            st.markdown(
+                f"""
+                <div class='kpi-container'>
+                    <div class='kpi-label'>TU ÍNDICE S.E.R.</div>
+                    <div class='big-score'>{idx}</div>
+                    <div class='community-score'>Promedio Comunidad: {prom_total:.1f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-        else:
-
-            prom_total = 0
-
-        
-
-        c_kpi1, c_kpi2 = st.columns([1, 1])
-
-        with c_kpi1:
-
-            st.markdown(f"""
-
-            <div class='kpi-container'>
-
-                <div class='kpi-label'>TU ÍNDICE S.E.R.</div>
-
-                <div class='big-score'>{idx}</div>
-
-                <div class='community-score'>Promedio Comunidad: {prom_total:.1f}</div>
-
-            </div>
-
-            """, unsafe_allow_html=True)
-
-        
-
-        with c_kpi2:
-
-            st.markdown(f"<h3 style='color: {COLOR_MORADO}; margin-top: 0;'>{tit}</h3>", unsafe_allow_html=True)
-
+        with c2:
+            st.markdown(
+                f"<h3 style='color:{COLOR_MORADO};'>{tit}</h3>",
+                unsafe_allow_html=True
+            )
             st.info(desc)
 
-            
 
         st.markdown("##### 📊 Desglose por Dimensión")
 
