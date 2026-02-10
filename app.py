@@ -469,8 +469,8 @@ if modo == "📝 Índice S.E.R.":
         st.markdown(f"""
         <table class="levels-table">
           <tr>
-            <th style="background-color:{COLOR_MORADO}; color: #FFFFFF !important;">Nivel</th>
-            <th style="background-color:{COLOR_MORADO}; color: #FFFFFF !important;">Descripción</th>
+            <th style="background-color:{COLOR_MORADO};"><span style="color: white !important;">Nivel</span></th>
+            <th style="background-color:{COLOR_MORADO};"><span style="color: white !important;">Descripción</span></th>
           </tr>
           <tr><td>🟣 ALTA SINTERGIA<br>(4.6 - 5.0)</td><td>Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos.</td></tr>
           <tr><td>🟢 ZONA DE PRESENCIA<br>(4.0 - 4.5)</td><td>Posees la flexibilidad interna para sentir la intensidad de la vida y retornar a tu centro.</td></tr>
