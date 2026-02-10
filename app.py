@@ -97,22 +97,33 @@ h1 {{color: {COLOR_MORADO}; font-family: 'Helvetica Neue', sans-serif; font-weig
 # 3. CONEXIÓN DB (TTL=0)
 # ==========================================
 
-@st.cache_resource(ttl=0)
+@st.cache_resource(ttl=0) 
 def conectar_db():
+    import json
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
-        env_secrets = os.environ.get("gcp_service_account")
-        if not env_secrets:
-            st.error("Railway NO está inyectando la variable gcp_service_account")
-            return None
-
-        info = json.loads(env_secrets)
+        # 1. Pegamos el JSON directamente aquí como un String
+        # Esto elimina la dependencia de Railway y de Streamlit Secrets
+        json_data = """
+        {
+          "type": "service_account",
+          "project_id": "elated-lotus-395222",
+          "private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCdoCOBdb/yCn4j\\nQcZZ7hFHqXa8N+wVUyXwhWAIB6RRykptPQy3IakTzL8RlX8290cwEWq/EiChIpEj\\njCkXMsaLryCcvAldzXREu2T5c25Bk0vvnuwHSVEwtD7B2tLYtv5hlq7mHWiM4wf4\\nTANekLPTX/qq4XyRAFzaXfLh9DjrW3TZp77gknw8e6f42Q3S3MHdkvr0PdXngbYG\\nhrxn4UgvSZ97gbpGqJLGgGvmgCkVZfARHqD33uyNLd1AE4/B0gctAyCXCgv8bK6q\\nusvb36B20CyA0j2BRHF9tKcKF5XHvfUWQ6Zyvn5AJzLWM4vZDWbR2rbjOAu9pg7S\\ndtsLIPOpAgMBAAECggEAOWr5JBKBjii2VB+EooOvNbyMbPmt/QKh4mCjX6lw+P5I\\naEyB0j/nuDewLjaX9azT+LWPffSbgDb4ScunuDSd0IpFxfJVMx9BSDw/BwM+WZLP\\naYUpk2nosmYmKjWM8raOKXxbT6XMzO1ynMcLvynU552h0Rd8adGJAV6RuC9fgJPo\\ntKrzryfk/un4Txh9OegpQ2MadPrfm8uY04CoPmztxEQVmX8aLxZP5VVVREUniCVo\\noS8NCU4QGiGphA+9XNDNqwehD+ZHlNXfXCWy3NDAuwkCUojzojLIYS8SXCTsxfT7\\nrn2Vs4R5xe8vW0/vhSx5lkBUKrwGFIyfEqEYDv+K1QKBgQDNhKbm11QK8e+ui6aY\\nPuOcW9TbTzCqxoCnEi5Bi4M8K0eZ+5Y3IIXFFcZqHtWmfECAzU8ya5VJEby6TPo3\\nosTJmN7EpDPYaSr595j6jz95NpM/hytArIC1ObNXEh9XKSQLmtLOTjZEpDrQjcLO\\n6wszQs7AzgqfIm8vqugP4QPZbwKBgQDEV+m7LaIKOwUHTUwQN1Gc4nmBlKxZ6HJY\\nNzurOPZRO7I4I9+XXwztiuySdudNpI57y1CSTofMQCIelpBeml6CEiZPUkr5aQMk\\ntJ89DalvFt6vPBS1L7dSfYKLi6vBYdAUciFJBubFLjvqlTpDzr/55uTQ+qKMHcOs\\nlIm8SkcIZwKBgQCGK4DOmWr7jkD8gZ0sLXpo3KbU2hkalGbvK3ZZQhxWDqc7Br1l\\leze4r1bEHBItTtjGyYF86hNQLAmLBT6d1/jgNKGK/DQ6q+s6xDLGvPETXXJ9pOt\\nMDECnv3O7TzaqTgn/1Z6ayMQourmtnWkolv4hjf2NU1H4LIXu4quuybJLwKBgEZp\\nvMHK0LTYi6odt2yNWjBoK+kjt1ea+/7U+AokqHljbjuh6dqwVMOPsd2o1LTMkeil\\ndmSx0xOV4GaV2nqC4+fDuIdz3L1rQpxURlMv5haX3g57/nUoApeLuVhwI417lZLv\\nhy5YUkRem1A6aiXNLJ3jhyXG7KpRNk5bCrZC8Qx7AoGAIXEIjTagTwsc4UGaGumM\\nMHw71Gt+/XseLkFD79tI0A0V2eZ5GPgTGgnVI1iN+5C2dcI1K01UxxC/HKflpOiK\\n3gIZFCAkeg2uJE01RAahMHl07IrTYroIAyt+VbbQaHtB4n2LX4kwNVNkWX1aBuB6\\nveB3yWHObEcXSgXvaFaxu3w=\\n-----END PRIVATE KEY-----\\n",
+          "client_email": "bot-anahat@elated-lotus-395222.iam.gserviceaccount.com"
+        }
+        """
+        
+        # 2. Convertimos el string a diccionario
+        info = json.loads(json_data, strict=False)
+        
+        # 3. Conectamos
         creds = Credentials.from_service_account_info(info, scopes=scopes)
         client = gspread.authorize(creds)
-
         return client.open_by_key(ID_SHEET)
-    except Exception:
+        
+    except Exception as e:
+        st.error(f"Error de conexión fatal: {e}")
         return None
 
 @st.cache_data(ttl=60)
