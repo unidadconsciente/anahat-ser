@@ -333,7 +333,7 @@ def guardar_completo(datos):
     return False
 
 
-
+@st.cache_data(ttl=60)
 def obtener_videos():
     # 1. No usamos el cliente global, pedimos una conexión nueva cada vez
     client = conectar_db() 
