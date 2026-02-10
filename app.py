@@ -98,31 +98,38 @@ h1 {{color: {COLOR_MORADO}; font-family: 'Helvetica Neue', sans-serif; font-weig
 # ==========================================
 
 @st.cache_resource(ttl=0)
+# ==========================================
+# 3. CONEXIÓN DB (TTL=0)
+# ==========================================
+
+@st.cache_resource(ttl=0)
 def conectar_db():
     import os
     import json
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
-        # 1. Leemos del sistema (Railway)
-        env_secrets = os.environ.get("gcp_service_account")
+        # LEER ÚNICAMENTE DEL SISTEMA (RAILWAY)
+        # No usamos st.secrets para evitar que Streamlit busque archivos inexistentes
+        credenciales_env = os.environ.get("gcp_service_account")
         
-        if env_secrets:
-            # LIMPIEZA CLAVE: Reemplazamos los saltos de línea mal interpretados por el sistema operativo
-            raw_json = env_secrets.replace('\\n', '\n')
-            info = json.loads(raw_json, strict=False)
+        if credenciales_env:
+            # Limpiamos el texto por si Railway duplicó las barras invertidas
+            info_limpia = credenciales_env.replace('\\n', '\n')
+            info = json.loads(info_limpia, strict=False)
+            
+            creds = Credentials.from_service_account_info(info, scopes=scopes)
+            client = gspread.authorize(creds)
+            return client.open_by_key(ID_SHEET)
         else:
-            # Fallback para Streamlit Cloud (archivo secrets.toml)
-            info = dict(st.secrets["gcp_service_account"])
-
-        creds = Credentials.from_service_account_info(info, scopes=scopes)
-        client = gspread.authorize(creds)
-        return client.open_by_key(ID_SHEET)
+            st.error("Error: No se detectó la variable 'gcp_service_account' en el panel de Railway.")
+            return None
         
     except Exception as e:
-        # Esto captura cualquier error de formato en el JSON o de conexión
-        st.error(f"Error técnico en conexión: {e}")
+        st.error(f"Error crítico de conexión: {e}")
         return None
+
+
 @st.cache_data(ttl=60)
 def obtener_datos_comunidad():
     try:
