@@ -144,20 +144,22 @@ st.markdown(f"""
 def conectar_db():
     import os
     import json
+
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
         env_secrets = os.environ.get("gcp_service_account")
-        
-        if env_secrets:
-            info = json.loads(env_secrets)
-        else:
-            info = dict(st.secrets["gcp_service_account"])
+
+        if not env_secrets:
+            st.error("Railway NO está inyectando la variable gcp_service_account")
+            return None
+
+        info = json.loads(env_secrets)
 
         creds = Credentials.from_service_account_info(info, scopes=scopes)
         client = gspread.authorize(creds)
         return client.open_by_key(ID_SHEET)
-        
+
     except Exception as e:
         st.error(f"Error técnico real: {e}")
         return None
