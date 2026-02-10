@@ -1,4 +1,3 @@
-
 import streamlit as st
 
 import pandas as pd
@@ -951,8 +950,6 @@ if modo == "📝 Índice S.E.R.":
         """, unsafe_allow_html=True)
 
         st.divider()
-
-
 
 
         
