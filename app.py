@@ -53,12 +53,27 @@ COLOR_AZUL = "#008080"
 
 st.markdown(f"""
 <style>
-    #MainMenu {{visibility: hidden;}} footer {{visibility: hidden;}} header {{visibility: hidden;}}
+    /* 1. ESTO HACE QUE APAREZCA LA BARRA SUPERIOR Y LA FLECHA */
+    header {{visibility: visible !important;}}
+    
+    footer {{visibility: hidden;}}
+    
     h1 {{color: {COLOR_MORADO}; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; text-align: center; margin-top: 0;}}
     
     .header-brand {{font-size: 24px; font-weight: bold; color: {COLOR_MORADO}; margin-bottom: 0px;}}
     .header-links a {{text-decoration: none; color: #666; font-size: 14px; margin-right: 15px;}}
     .header-links a:hover {{color: {COLOR_MORADO}; font-weight: bold;}}
+    
+    /* TABLA DE NIVELES: FORZAR TEXTO BLANCO */
+    .levels-table {{width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: sans-serif;}}
+    .levels-table th {{
+        background-color: {COLOR_MORADO}; 
+        padding: 12px; 
+        color: white !important; /* BLANCO OBLIGATORIO */
+        text-align: left;
+        font-weight: bold;
+    }}
+    .levels-table td {{padding: 12px; border-bottom: 1px solid #eee; vertical-align: top; color: #333; font-size: 13px;}}
     
     .big-score {{font-size: 56px; font-weight: bold; color: {COLOR_MORADO}; line-height: 1;}}
     .community-score {{font-size: 16px; color: gray; margin-top: 10px;}}
@@ -72,11 +87,8 @@ st.markdown(f"""
     
     .stButton>button {{border-radius: 20px; background-color: white; color: {COLOR_MORADO}; border: 1px solid {COLOR_MORADO}; font-weight: bold;}}
     .stButton>button:hover {{background-color: {COLOR_MORADO}; color: white;}}
-    
-    /* ELIMINAMOS CSS DE TABLA AQUÍ PARA USARLO INLINE EN EL HTML */
 </style>
 """, unsafe_allow_html=True)
-
 # ==========================================
 # 3. CONEXIÓN DB (TTL=0)
 # ==========================================
@@ -110,18 +122,40 @@ def obtener_datos_comunidad():
     return pd.DataFrame()
 
 def verificar_privacidad(email):
-    # LÓGICA MEJORADA: Busca CUALQUIER registro "SI"
+    # 1. Obtenemos datos frescos (gracias al ttl=0 en conectar_db)
     df = obtener_datos_comunidad()
-    if not df.empty and 'Email' in df.columns and 'Privacidad_Aceptada' in df.columns:
-        email_clean = email.strip().lower()
-        # Filtramos por email
-        mis_registros = df[df['Email'].astype(str).str.strip().str.lower() == email_clean]
+    
+    # Si no hay datos o columnas, asumimos que no ha aceptado
+    if df.empty or 'Email' not in df.columns or 'Privacidad_Aceptada' not in df.columns:
+        return False
         
-        # Verificamos si AL MENOS UNO tiene "SI" (sin importar mayúsculas/minúsculas)
-        if not mis_registros.empty:
-            aceptados = mis_registros[mis_registros['Privacidad_Aceptada'].astype(str).str.strip().str.upper() == "SI"]
-            if not aceptados.empty:
-                return True
+    # 2. Limpieza del correo ingresado (minúsculas y sin espacios)
+    email_clean = email.strip().lower()
+    
+    # 3. Filtramos TODO el historial de ese correo
+    # Convertimos la columna Email a string y limpiamos para asegurar coincidencia
+    mis_registros = df[df['Email'].astype(str).str.strip().str.lower() == email_clean]
+    
+    # 4. Si nunca ha usado la app, debe aceptar
+    if mis_registros.empty:
+        return False
+        
+    # 5. SOLUCIÓN AL BUCLE: Buscamos si AL MENOS UNA VEZ dijo "SI" en el pasado
+    # No importa si el último registro está vacío, si antes dijo SI, vale.
+    aceptados = mis_registros[mis_registros['Privacidad_Aceptada'].astype(str).str.strip().str.upper() == "SI"]
+    
+    if not aceptados.empty:
+        return True # ¡Encontrado un SI histórico! Acceso concedido.
+        
+    return False
+        
+    # 5. Buscamos si AL MENOS UNA VEZ aceptó en el pasado
+    # Buscamos cualquier "SI" en su historial, no solo en la última fila
+    aceptados = mis_registros[mis_registros['Privacidad_Aceptada'].astype(str).str.strip().str.upper() == "SI"]
+    
+    if not aceptados.empty:
+        return True # ¡Encontramos un SI en el historial! Acceso concedido.
+        
     return False
 
 def guardar_completo(datos):
