@@ -335,37 +335,29 @@ def guardar_completo(datos):
 
 @st.cache_data(ttl=60)
 def obtener_videos():
-    # 1. No usamos el cliente global, pedimos una conexión nueva cada vez
-    client = conectar_db() 
-    if client:
-        try:
-            # 2. Forzamos la apertura del Spreadsheet para invalidar cualquier caché de Railway
-            sh = client.open_by_key(ID_SHEET)
-            
-            # 3. Accedemos a la hoja directamente
-            ws = sh.worksheet("VIDEOS_AULA")
-            
-            # 4. Traemos los datos. Si get_all_records falla, usamos get_all_values
-            try:
-                records = ws.get_all_records()
-            except:
-                data = ws.get_all_values()
-                records = [dict(zip(data[0], row)) for row in data[1:]] if len(data) > 1 else []
-            
-            if records:
-                df = pd.DataFrame(records)
-                # Limpieza de nombres de columnas
-                df.columns = [str(c).strip() for c in df.columns]
-                
-                if 'Fecha' in df.columns:
-                    df['Fecha'] = pd.to_datetime(df['Fecha'], errors='coerce')
-                    df = df.sort_values(by='Fecha', ascending=False)
-                return df
-        except Exception as e:
-            # Si esto sale, Railway nos dirá el error exacto
-            st.error(f"Error técnico: {e}")
+    # En lugar de usar el client global, abrimos una conexión local y fresca
+    try:
+        # 1. Autenticación directa y atómica
+        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
+        client = gspread.authorize(creds)
+        
+        # 2. Apertura directa sin pasar por variables intermedias
+        ws = client.open_by_key(ID_SHEET).worksheet("VIDEOS_AULA")
+        records = ws.get_all_records()
+        
+        if records:
+            df = pd.DataFrame(records)
+            df.columns = [str(c).strip() for c in df.columns]
+            if 'Fecha' in df.columns:
+                df['Fecha'] = pd.to_datetime(df['Fecha'], errors='coerce')
+                df = df.sort_values(by='Fecha', ascending=False)
+            return df
+    except Exception as e:
+        # Si esto no muestra nada en pantalla, es que el código ni siquiera está corriendo
+        st.error(f"Error de lectura en Railway: {e}")
+    
     return pd.DataFrame()
-
 
 
 # ==========================================
