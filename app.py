@@ -16,45 +16,58 @@ from textos_legales import AVISO_LEGAL_COMPLETO, DEFINICIONES_SER, TABLA_NIVELES
 # ==========================================
 # 1. CONFIGURACIÓN VISUAL
 # ==========================================
-st.set_page_config(page_title="Indice S.E.R. | Anahat", page_icon="🫀", layout="centered")
+icono_pagina = "logo.png" if os.path.exists("logo.png") else "🫀"
 
-# DATOS DE CONTACTO
+st.set_page_config(
+    page_title="Indice S.E.R. | Anahat", 
+    page_icon=icono_pagina, 
+    layout="centered", 
+    initial_sidebar_state="expanded"
+)
+
+# DATOS
 CLAVE_AULA = "ANAHAT2026"
 ID_SHEET = "1y5FIw_mvGUSKwhc41JaB01Ti6_93dBJmfC1BTpqrvHw"
 WHATSAPP = "525539333599"
 WEB_LINK = "https://unidadconsciente.com/"
 INSTA_LINK = "https://www.instagram.com/unidad_consciente?igsh=Z3hwNzZuOWVjcG91&utm_source=qr"
 
-st.markdown("""
+# COLORES
+COLOR_MORADO = "#4B0082"
+COLOR_DORADO = "#DAA520"
+COLOR_AZUL = "#008080" 
+
+st.markdown(f"""
 <style>
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
-    h1 {color: #4B0082; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; text-align: center; margin-top: 0;}
+    #MainMenu {{visibility: hidden;}} footer {{visibility: hidden;}} header {{visibility: hidden;}}
+    h1 {{color: {COLOR_MORADO}; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; text-align: center; margin-top: 0;}}
     
-    /* ENCABEZADO PERSONALIZADO */
-    .header-brand {font-size: 24px; font-weight: bold; color: #4B0082; margin-bottom: 0px;}
-    .header-links a {text-decoration: none; color: #666; font-size: 14px; margin-right: 15px;}
-    .header-links a:hover {color: #4B0082; font-weight: bold;}
+    .header-brand {{font-size: 24px; font-weight: bold; color: {COLOR_MORADO}; margin-bottom: 0px;}}
+    .header-links a {{text-decoration: none; color: #666; font-size: 14px; margin-right: 15px;}}
+    .header-links a:hover {{color: {COLOR_MORADO}; font-weight: bold;}}
     
-    /* TABLA DE NIVELES */
-    .levels-table {width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; font-family: sans-serif;}
-    .levels-table th {background-color: #f0f2f6; padding: 12px; border-bottom: 2px solid #4B0082; color: #4B0082; text-align: left;}
-    .levels-table td {padding: 12px; border-bottom: 1px solid #eee; vertical-align: top; color: #333;}
+    .levels-table {{width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: sans-serif;}}
+    .levels-table th {{
+        background-color: {COLOR_MORADO}; 
+        padding: 12px; 
+        color: #FFFFFF !important; 
+        text-align: left;
+        font-weight: bold;
+    }}
+    .levels-table td {{padding: 12px; border-bottom: 1px solid #eee; vertical-align: top; color: #333; font-size: 13px;}}
     
-    /* KPI Y COMPARATIVA */
-    .big-score {font-size: 56px; font-weight: bold; color: #4B0082; line-height: 1;}
-    .community-score {font-size: 16px; color: gray; margin-top: 10px;}
-    .kpi-container {text-align: center; padding: 20px; background-color: #fcfcfc; border-radius: 10px; border: 1px solid #eee;}
+    .big-score {{font-size: 56px; font-weight: bold; color: {COLOR_MORADO}; line-height: 1;}}
+    .community-score {{font-size: 16px; color: gray; margin-top: 10px;}}
+    .kpi-container {{text-align: center; padding: 20px; background-color: #fcfcfc; border-radius: 10px; border: 1px solid #eee;}}
 
-    /* TARJETAS DE DEFINICIÓN */
-    .def-card {background-color: #f9f9f9; border-left: 4px solid #4B0082; padding: 10px; border-radius: 4px; height: 100%;}
-    .def-title {color: #4B0082; font-weight: bold; font-size: 14px; margin-bottom: 5px;}
-    .def-body {font-size: 12px; color: #333; line-height: 1.3;}
+    .def-card {{background-color: #f9f9f9; border-left: 4px solid {COLOR_MORADO}; padding: 10px; border-radius: 4px; height: 100%;}}
+    .def-title {{color: {COLOR_MORADO}; font-weight: bold; font-size: 14px; margin-bottom: 5px;}}
+    .def-body {{font-size: 12px; color: #333; line-height: 1.3;}}
 
-    /* ESCALA */
-    .scale-guide {background-color: #f0f2f6; color: #333; padding: 10px; border-radius: 5px; text-align: center; font-weight: 600; font-size: 14px; margin-bottom: 15px;}
+    .scale-guide {{background-color: #f0f2f6; color: #333; padding: 10px; border-radius: 5px; text-align: center; font-weight: 600; font-size: 14px; margin-bottom: 15px;}}
     
-    .stButton>button {border-radius: 20px; background-color: white; color: #4B0082; border: 1px solid #4B0082; font-weight: bold;}
-    .stButton>button:hover {background-color: #4B0082; color: white;}
+    .stButton>button {{border-radius: 20px; background-color: white; color: {COLOR_MORADO}; border: 1px solid {COLOR_MORADO}; font-weight: bold;}}
+    .stButton>button:hover {{background-color: {COLOR_MORADO}; color: white;}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -82,7 +95,11 @@ def obtener_datos_comunidad():
             cols = ['Score_Somatica', 'Score_Energia', 'Score_Regulacion', 'INDICE_TOTAL']
             for c in cols:
                 if c in df.columns: df[c] = pd.to_numeric(df[c], errors='coerce')
-            df = df[df['INDICE_TOTAL'] > 0]
+            
+            # FILTRO: Calculamos el promedio nosotros mismos y filtramos basura > 5
+            df['Calculado_Total'] = (df['Score_Somatica'] + df['Score_Energia'] + df['Score_Regulacion']) / 3
+            df = df[(df['Calculado_Total'] >= 1.0) & (df['Calculado_Total'] <= 5.0)]
+            
             return df
         except: return pd.DataFrame()
     return pd.DataFrame()
@@ -132,38 +149,42 @@ def calcular_ser(resp):
     return round(som,2), round(ene,2), round(reg,2), round(idx,2)
 
 def interpretar(idx):
-    if idx < 2.0: return "🔴 ZONA DE DESCONEXIÓN", "Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional."
-    elif idx < 3.0: return "🟠 ZONA REACTIVA", "Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad."
-    elif idx < 4.0: return "🟡 MODO RESISTENCIA", "Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente."
-    elif idx < 4.6: return "🟢 ZONA DE PRESENCIA", "Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza."
-    else: return "🟣 ALTA SINTERGIA", "Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa."
+    if idx < 2.0: return "ZONA DE DESCONEXIÓN", "Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional."
+    elif idx < 3.0: return "ZONA REACTIVA", "Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad."
+    elif idx < 4.0: return "MODO RESISTENCIA", "Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente."
+    elif idx < 4.6: return "ZONA DE PRESENCIA", "Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza."
+    else: return "ALTA SINTERGIA", "Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa."
 
 # ==========================================
-# 4. PDF (MEMBRETE MORADO + FOOTER)
+# 4. PDF (DORADO, BARRAS, SIN EMOJIS)
 # ==========================================
 class PDF(FPDF):
     def header(self):
-        # Franja Morada
-        self.set_fill_color(75, 0, 130)
-        self.rect(0, 0, 210, 40, 'F') 
-        # Logo
+        # Franja DORADA
+        self.set_fill_color(218, 165, 32)
+        self.rect(0, 0, 210, 35, 'F') 
+        
+        # Logo 
         if os.path.exists("logo.png"):
-            self.image("logo.png", 10, 8, 25) 
-        # Título
-        self.set_font('Arial', 'B', 18)
+            self.image("logo.png", 10, 5, 20)
+            
+        # Textos Header
+        self.set_font('Arial', 'B', 14)
         self.set_text_color(255, 255, 255)
-        self.set_xy(40, 15) 
-        self.cell(0, 10, 'INDICE S.E.R. | UNIDAD CONSCIENTE', 0, 1, 'L')
-        self.ln(25)
+        self.set_xy(35, 10)
+        self.cell(0, 10, 'UNIDAD CONSCIENTE', 0, 1, 'L')
+        
+        self.set_font('Arial', '', 10)
+        self.set_xy(35, 18)
+        self.cell(0, 10, 'INDICE S.E.R.', 0, 1, 'L')
+        self.ln(20)
 
     def footer(self):
-        # Pie de página con links
         self.set_y(-30)
-        self.set_font('Arial', 'B', 10)
-        self.set_text_color(75, 0, 130)
+        self.set_font('Arial', 'B', 9)
+        self.set_text_color(218, 165, 32)
         self.cell(0, 5, 'UNIDAD CONSCIENTE', 0, 1, 'C')
-        
-        self.set_font('Arial', '', 9)
+        self.set_font('Arial', '', 8)
         self.set_text_color(50, 50, 50)
         self.cell(0, 5, 'Web: unidadconsciente.com', 0, 1, 'C', link=WEB_LINK)
         self.cell(0, 5, 'Instagram: @unidad_consciente', 0, 1, 'C', link=INSTA_LINK)
@@ -171,78 +192,105 @@ class PDF(FPDF):
 
 def clean_text(text):
     if isinstance(text, str):
+        text = text.replace("🟣", "").replace("🟢", "").replace("🟡", "").replace("🟠", "").replace("🔴", "")
+        text = text.replace("🔹", "-").replace("🧘", "").replace("⚡", "").replace("🌊", "")
         return text.encode('latin-1', 'replace').decode('latin-1')
     return text
+
+def draw_bar_chart(pdf, s, e, r):
+    pdf.ln(5)
+    pdf.set_font("Arial", "B", 10)
+    pdf.set_text_color(0, 0, 0)
+    factor = 20 
+    
+    # Somatica
+    pdf.cell(30, 8, "Somatica:", 0, 0)
+    pdf.set_fill_color(75, 0, 130)
+    pdf.cell(s * factor, 6, f" {s}", 0, 1, 'L', fill=True)
+    
+    # Energia
+    pdf.cell(30, 8, "Energia:", 0, 0)
+    pdf.set_fill_color(218, 165, 32)
+    pdf.cell(e * factor, 6, f" {e}", 0, 1, 'L', fill=True)
+    
+    # Regulacion
+    pdf.cell(30, 8, "Regulacion:", 0, 0)
+    pdf.set_fill_color(0, 128, 128)
+    pdf.cell(r * factor, 6, f" {r}", 0, 1, 'L', fill=True)
+    pdf.ln(5)
 
 def generar_pdf(nombre, s, e, r, idx, estado, desc):
     pdf = PDF()
     pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=35)
+    pdf.set_y(40)
     
-    # Contenido (ajustado para no chocar con el header)
-    pdf.set_y(45)
-    
-    # Definiciones
     pdf.set_font("Arial", "", 10)
-    pdf.set_text_color(50, 50, 50)
-    clean_def = DEFINICIONES_SER.replace("🔹", "-").encode('latin-1', 'replace').decode('latin-1')
-    pdf.multi_cell(0, 5, clean_def)
+    pdf.set_text_color(100, 100, 100)
+    clean_nombre = clean_text(nombre)
+    pdf.cell(0, 5, f"Usuario: {clean_nombre} | {datetime.now().strftime('%d/%m/%Y')}", ln=True, align='R')
     pdf.ln(5)
+
+    pdf.set_font("Arial", "B", 14)
+    pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(0, 8, f"Hola {clean_nombre},")
+    pdf.ln(2)
     
-    # Usuario
+    pdf.set_font("Arial", "", 12)
+    pdf.write(5, "TU INDICE S.E.R. ES DE ")
+    pdf.set_font("Arial", "B", 14)
+    pdf.set_text_color(75, 0, 130)
+    pdf.write(5, f"{idx}/5.0")
     pdf.set_font("Arial", "", 12)
     pdf.set_text_color(0, 0, 0)
-    clean_nombre = nombre.encode('latin-1', 'replace').decode('latin-1')
-    pdf.cell(0, 10, f"Usuario: {clean_nombre} | {datetime.now().strftime('%d/%m/%Y')}", ln=True, align='C')
+    pdf.write(5, ", ES DECIR: ")
+    pdf.ln(10)
     
-    # Resultado Grande
-    pdf.ln(5)
-    pdf.set_font("Arial", "B", 30)
-    pdf.set_text_color(75, 0, 130)
-    pdf.cell(0, 15, f"{idx}/5.0", ln=True, align='C')
-    
-    pdf.set_font("Arial", "B", 14)
+    pdf.set_font("Arial", "B", 16)
+    pdf.set_text_color(218, 165, 32)
     pdf.cell(0, 10, clean_text(estado), ln=True, align='C')
     
-    pdf.set_font("Arial", "I", 10)
-    pdf.set_text_color(80,80,80)
-    pdf.multi_cell(0, 5, clean_text(desc), align='C')
-    
-    # Desglose
-    pdf.ln(10)
     pdf.set_font("Arial", "", 11)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 8, f"Somatica: {s}  |  Energia: {e}  |  Regulacion: {r}", ln=True, align='C')
+    pdf.set_text_color(50, 50, 50)
+    pdf.multi_cell(0, 6, clean_text(desc), align='C')
     
-    # Niveles
     pdf.ln(10)
+    draw_bar_chart(pdf, s, e, r)
+    
+    pdf.ln(5)
     pdf.set_font("Arial", "B", 10)
-    pdf.set_text_color(75, 0, 130)
-    pdf.cell(0, 10, "MAPA DE EVOLUCION:", ln=True)
-    pdf.set_font("Arial", "", 8)
     pdf.set_text_color(0, 0, 0)
-    clean_tabla = TABLA_NIVELES.encode('latin-1', 'replace').decode('latin-1')
-    pdf.multi_cell(0, 4, clean_tabla)
+    pdf.cell(0, 6, "DEFINICIONES:", ln=True)
+    pdf.set_font("Arial", "", 9)
+    pdf.set_text_color(80, 80, 80)
+    pdf.multi_cell(0, 5, clean_text(DEFINICIONES_SER))
+    
+    pdf.ln(10)
+    pdf.set_font("Arial", "B", 11)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 10, "MAPA DE EVOLUCION:", ln=True, align='C')
+    
+    pdf.set_font("Arial", "", 9)
+    clean_mapa = clean_text(TABLA_NIVELES)
+    pdf.multi_cell(0, 5, clean_mapa, align='C')
+    
+    pdf.ln(5)
+    pdf.set_font("Arial", "I", 8)
+    pdf.cell(0, 5, f"Fecha de reporte: {datetime.now().strftime('%d/%m/%Y')}", ln=True, align='R')
     
     return pdf.output(dest="S").encode("latin-1")
 
-# ==========================================
-# 5. COMPONENTE DE ENCABEZADO
-# ==========================================
 def mostrar_encabezado():
-    """Muestra Logo + Links"""
     col_logo, col_text = st.columns([1, 4])
-    
     with col_logo:
         if os.path.exists("logo.png"):
             st.image("logo.png", width=80)
-    
     with col_text:
         st.markdown(f"""
         <div class="header-brand">UNIDAD CONSCIENTE</div>
         <div class="header-links">
             <a href="{WEB_LINK}" target="_blank">🌐 Web</a>
             <a href="{INSTA_LINK}" target="_blank">📸 Instagram</a>
-            <a href="https://wa.me/{WHATSAPP}" target="_blank">🟢 WhatsApp</a>
         </div>
         """, unsafe_allow_html=True)
 
@@ -251,7 +299,6 @@ def mostrar_encabezado():
 # ==========================================
 with st.sidebar:
     st.markdown("### 🫀 Menú")
-    # AQUÍ CAMBIÉ EL NOMBRE
     modo = st.radio("", ["📝 Índice S.E.R.", "🧘 Aula Virtual"], label_visibility="collapsed")
     st.divider()
     acceso = False
@@ -260,25 +307,21 @@ with st.sidebar:
         if pwd == CLAVE_AULA: acceso = True
 
 if modo == "📝 Índice S.E.R.":
-    # 1. ENCABEZADO
     mostrar_encabezado()
     st.markdown("---")
     
-    # 2. TÍTULO Y DEFINICIONES
     st.markdown("<h1>Indice S.E.R (Somática, Energía, Regulación)</h1>", unsafe_allow_html=True)
     
-    # Tarjetas
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown('<div class="def-card"><div class="def-title">🧘 SOMÁTICA</div><div class="def-body">Capacidad de percibir y traducir señales internas.</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="def-card" style="border-left: 4px solid {COLOR_MORADO}"><div class="def-title" style="color:{COLOR_MORADO}">🧘 SOMÁTICA</div><div class="def-body">Capacidad de percibir y traducir señales internas.</div></div>', unsafe_allow_html=True)
     with col2:
-        st.markdown('<div class="def-card"><div class="def-title">⚡ ENERGÍA</div><div class="def-body">Fuerza vital disponible para crear y sostener.</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="def-card" style="border-left: 4px solid {COLOR_DORADO}"><div class="def-title" style="color:{COLOR_DORADO}">⚡ ENERGÍA</div><div class="def-body">Fuerza vital disponible para crear y sostener.</div></div>', unsafe_allow_html=True)
     with col3:
-        st.markdown('<div class="def-card"><div class="def-title">🌊 REGULACIÓN</div><div class="def-body">Capacidad de retornar al equilibrio y la calma.</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="def-card" style="border-left: 4px solid {COLOR_AZUL}"><div class="def-title" style="color:{COLOR_AZUL}">🌊 REGULACIÓN</div><div class="def-body">Capacidad de retornar al equilibrio y la calma.</div></div>', unsafe_allow_html=True)
     
     st.divider()
     
-    # Variables de Sesión
     if 'resultado_listo' not in st.session_state: st.session_state.resultado_listo = False
     if 'email_ok' not in st.session_state: st.session_state.email_ok = False
     
@@ -328,33 +371,31 @@ if modo == "📝 Índice S.E.R.":
             datos = [fecha, email, nombre, s, e, r, idx, tit] + todas + [priv_val]
             guardar_completo(datos)
             
-            # GUARDAR EN SESIÓN
             st.session_state.resultado_listo = True
             st.session_state.res_datos = (nombre, s, e, r, idx, tit, desc)
 
-    # MOSTRAR RESULTADOS
     if st.session_state.resultado_listo:
         nombre, s, e, r, idx, tit, desc = st.session_state.res_datos
         
         st.markdown("### 🗺️ Mapa de Niveles S.E.R.")
-        st.markdown("""
+        st.markdown(f"""
         <table class="levels-table">
-          <tr><th style="width:140px;">Nivel</th><th>Descripción</th></tr>
-          <tr><td>🟣 ALTA SINTERGIA<br>(4.6 - 5.0)</td><td>Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa.</td></tr>
-          <tr><td>🟢 ZONA DE PRESENCIA<br>(4.0 - 4.5)</td><td>Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza.</td></tr>
-          <tr><td>🟡 MODO RESISTENCIA<br>(3.0 - 3.9)</td><td>Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente.</td></tr>
-          <tr><td>🟠 ZONA REACTIVA<br>(2.0 - 2.9)</td><td>Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad.</td></tr>
-          <tr><td>🔴 ZONA DE DESCONEXIÓN<br>(1.0 - 1.9)</td><td>Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional.</td></tr>
+          <tr><th style="background-color:{COLOR_MORADO}; color:white;">Nivel</th><th style="background-color:{COLOR_MORADO}; color:white;">Descripción</th></tr>
+          <tr><td>🟣 ALTA SINTERGIA<br>(4.6 - 5.0)</td><td>Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos.</td></tr>
+          <tr><td>🟢 ZONA DE PRESENCIA<br>(4.0 - 4.5)</td><td>Posees la flexibilidad interna para sentir la intensidad de la vida y retornar a tu centro.</td></tr>
+          <tr><td>🟡 MODO RESISTENCIA<br>(3.0 - 3.9)</td><td>Funcionalidad a través del esfuerzo y tensión sostenida.</td></tr>
+          <tr><td>🟠 ZONA REACTIVA<br>(2.0 - 2.9)</td><td>Química de defensa y alerta perpetua.</td></tr>
+          <tr><td>🔴 ZONA DE DESCONEXIÓN<br>(1.0 - 1.9)</td><td>Estado profundo de Burnout. Inmovilización para preservar la vida.</td></tr>
         </table>
         """, unsafe_allow_html=True)
         
         st.divider()
         
         df_com = obtener_datos_comunidad()
-        prom_total = df_com['INDICE_TOTAL'].mean() if not df_com.empty else 0
-        prom_s = df_com['Score_Somatica'].mean() if not df_com.empty else 0
-        prom_e = df_com['Score_Energia'].mean() if not df_com.empty else 0
-        prom_r = df_com['Score_Regulacion'].mean() if not df_com.empty else 0
+        if not df_com.empty:
+            prom_total = df_com['Calculado_Total'].mean()
+        else:
+            prom_total = 0
         
         c_kpi1, c_kpi2 = st.columns([1, 1])
         with c_kpi1:
@@ -367,22 +408,40 @@ if modo == "📝 Índice S.E.R.":
             """, unsafe_allow_html=True)
         
         with c_kpi2:
-            st.markdown(f"<h3 style='color: #4B0082; margin-top: 0;'>{tit}</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h3 style='color: {COLOR_MORADO}; margin-top: 0;'>{tit}</h3>", unsafe_allow_html=True)
             st.info(desc)
             
-        st.markdown("##### 📊 Desglose")
-        df_bar = pd.DataFrame({'Dim':['Somática','Energía','Regulación'], 'Tu Puntaje':[s,e,r]})
-        fig_bar = px.bar(df_bar, x='Tu Puntaje', y='Dim', orientation='h', color='Dim', color_discrete_sequence=['#4B0082'])
-        fig_bar.update_layout(height=150, xaxis=dict(range=[0,5.5]), margin=dict(t=0,b=0,l=0,r=0))
+        st.markdown("##### 📊 Desglose por Dimensión")
+        df_bar = pd.DataFrame({'Dim':['Somática','Energía','Regulación'], 'Puntaje':[s,e,r], 'Color':[COLOR_MORADO, COLOR_DORADO, COLOR_AZUL]})
+        fig_bar = px.bar(df_bar, x='Puntaje', y='Dim', orientation='h', color='Dim', color_discrete_map={'Somática':COLOR_MORADO, 'Energía':COLOR_DORADO, 'Regulación':COLOR_AZUL})
+        fig_bar.update_layout(height=180, xaxis=dict(range=[0,5.5]), margin=dict(t=0,b=0,l=0,r=0), showlegend=False)
         st.plotly_chart(fig_bar, use_container_width=True)
-        
+        st.caption("Nota: Un puntaje mayor (cercano a 5) indica mayor integración y salud.")
+
         st.markdown("##### 🆚 Radar Comparativo")
         fig = go.Figure()
         fig.add_trace(go.Scatterpolar(r=[s,e,r,s], theta=['SOM','ENE','REG','SOM'], fill='toself', name='TÚ', line_color='#4B0082'))
-        if prom_s > 0:
-            fig.add_trace(go.Scatterpolar(r=[prom_s,prom_e,prom_r,prom_s], theta=['SOM','ENE','REG','SOM'], fill='toself', name='COMUNIDAD', line_color='gray', opacity=0.3))
+        
+        if not df_com.empty:
+             prom_s = df_com['Score_Somatica'].mean()
+             prom_e = df_com['Score_Energia'].mean()
+             prom_r = df_com['Score_Regulacion'].mean()
+             fig.add_trace(go.Scatterpolar(r=[prom_s,prom_e,prom_r,prom_s], theta=['SOM','ENE','REG','SOM'], fill='toself', name='COMUNIDAD', line_color='gray', opacity=0.5))
+        
         fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0,5])), height=250, margin=dict(t=20,b=20))
         st.plotly_chart(fig, use_container_width=True)
+        
+        if not df_com.empty and 'Email' in df_com.columns:
+             mis_datos = df_com[df_com['Email'].astype(str).str.lower() == email]
+             if not mis_datos.empty and 'Fecha' in mis_datos.columns:
+                 mis_datos['Fecha'] = pd.to_datetime(mis_datos['Fecha'], errors='coerce')
+                 mis_datos = mis_datos.sort_values('Fecha')
+                 if len(mis_datos) > 1:
+                     st.markdown("##### 📈 Tu Evolución en el Tiempo")
+                     fig_line = px.line(mis_datos, x='Fecha', y='Calculado_Total', markers=True)
+                     fig_line.update_traces(line_color=COLOR_MORADO)
+                     fig_line.update_layout(yaxis=dict(range=[1,5.5]), height=250)
+                     st.plotly_chart(fig_line, use_container_width=True)
 
         st.markdown("---")
         pdf_bytes = generar_pdf(nombre, s, e, r, idx, tit, desc)
@@ -390,12 +449,12 @@ if modo == "📝 Índice S.E.R.":
         with c_d1:
             st.download_button("📥 Descargar Reporte (PDF)", pdf_bytes, f"Reporte_{nombre}.pdf", "application/pdf")
         with c_d2:
-            msg = f"Hola, soy {nombre}. Mi índice S.E.R. es {idx} ({tit}). ¿Cómo puedo subir mi índice S.E.R. y unirme a la comunidad?"
+            # MENSAJE EXACTO SOLICITADO
+            msg = f"Hola, soy {nombre}, este fue mi resultado {idx}, {tit}, quiero subir mi indice.."
             link_wa = f"https://wa.me/{WHATSAPP}?text={urllib.parse.quote(msg)}"
-            st.link_button("🟢 Unirme a la Comunidad (WhatsApp)", link_wa, type="primary")
+            st.link_button("🟢 Quiero mejorar mi ÍNDICE S.E.R.", link_wa, type="primary")
 
 elif modo == "🧘 Aula Virtual":
-    # 1. ENCABEZADO TAMBIÉN AQUÍ
     mostrar_encabezado()
     st.markdown("---")
     st.title("Aula Virtual")
