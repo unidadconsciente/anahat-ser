@@ -186,25 +186,28 @@ st.markdown(f"""
 
 # ==========================================
 
+
+
 @st.cache_resource(ttl=0) 
-
 def conectar_db():
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
-    try:
-
-        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-
-        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
-
-        client = gspread.authorize(creds)
-
-        return client.open_by_key(ID_SHEET)
-
-    except Exception as e:
-
+    # --- REEMPLAZA DESDE AQUÍ ---
+    # Usamos .get() para evitar que Streamlit lance el error "No secrets found" 
+    # y nos permita buscar la variable de entorno en Railway
+    info = st.secrets.get("gcp_service_account")
+    
+    if info is None:
+        st.error("Error: La variable 'gcp_service_account' no está configurada en Railway.")
         return None
+    
+    # Convertimos a diccionario por seguridad (Railway lo requiere a veces)
+    info_dict = dict(info)
+    creds = Credentials.from_service_account_info(info_dict, scopes=scopes)
+    # --- HASTA AQUÍ ---
 
-
+    client = gspread.authorize(creds)
+    return client.open_by_key(ID_SHEET)
 
 def obtener_datos_comunidad():
 
