@@ -1,26 +1,16 @@
+st.error("🚨 ESTE ES EL ARCHIVO ACTIVO 🚨")
+
 import streamlit as st
-
 import pandas as pd
-
 import plotly.graph_objects as go
-
 import plotly.express as px
-
 from datetime import datetime
-
 import pytz
-
 import gspread
-
 from google.oauth2.service_account import Credentials
-
 from fpdf import FPDF
-
 import urllib.parse
-
 import os
-
-
 
 # ==========================================
 # 1. DATOS Y TEXTOS
@@ -160,9 +150,8 @@ def conectar_db():
         client = gspread.authorize(creds)
         return client.open_by_key(ID_SHEET)
 
-    except Exception as e:
-        st.error(f"Error técnico real: {e}")
-        return None
+    except Exception:
+    return None
 
 
 
@@ -265,9 +254,8 @@ def obtener_videos():
 
         return df
 
-    except Exception as e:
-        st.error(f"Error Aula Virtual: {e}")
-        return pd.DataFrame()
+    except Exception:
+    return pd.DataFrame()
 
     
   
