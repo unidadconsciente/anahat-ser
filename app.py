@@ -462,8 +462,8 @@ if modo == "📝 Índice S.E.R.":
 
     if st.session_state.resultado_listo:
         nombre, s, e, r, idx, tit, desc = st.session_state.res_datos
-        
-   st.markdown("### 🗺️ Mapa de Niveles S.E.R.")
+
+        st.markdown("### 🗺️ Mapa de Niveles S.E.R.")
         
         st.markdown(f"""
         <table class="levels-table">
@@ -493,6 +493,8 @@ if modo == "📝 Índice S.E.R.":
           </tr>
         </table>
         """, unsafe_allow_html=True)
+
+
         
         st.divider()
         
