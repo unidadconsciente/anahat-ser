@@ -946,7 +946,43 @@ if modo == "📝 Índice S.E.R.":
 
         st.markdown("### 🗺️ Mapa de Niveles S.E.R.")
 
-        st.markdown(MAPA_SER_HTML, unsafe_allow_html=True)
+        st.markdown(f"""
+<table style="width:100%; border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th style="background-color:{COLOR_MORADO}; padding: 12px; text-align: left; border: 1px solid #eee;">
+        <span style="color: white !important; font-weight: bold;">Nivel</span>
+      </th>
+      <th style="background-color:{COLOR_MORADO}; padding: 12px; text-align: left; border: 1px solid #eee;">
+        <span style="color: white !important; font-weight: bold;">Descripción</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 12px; border: 1px solid #eee;">🟣 <b>ALTA SINTERGIA</b><br>(4.6 - 5.0)</td>
+      <td style="padding: 12px; border: 1px solid #eee;">Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa.</td>
+    </tr>
+    <tr>
+      <td style="padding: 12px; border: 1px solid #eee;">🟢 <b>ZONA DE PRESENCIA</b><br>(4.0 - 4.5)</td>
+      <td style="padding: 12px; border: 1px solid #eee;">Posees la flexibilidad interna para sentir la intensidad de la vida y retornar a tu centro mediante la práctica consciente.</td>
+    </tr>
+    <tr>
+      <td style="padding: 12px; border: 1px solid #eee;">🟡 <b>MODO RESISTENCIA</b><br>(3.0 - 3.9)</td>
+      <td style="padding: 12px; border: 1px solid #eee;">Tu sistema mantiene la funcionalidad a través del esfuerzo. Hay signos de agotamiento, pero conservas capacidad de regreso.</td>
+    </tr>
+    <tr>
+      <td style="padding: 12px; border: 1px solid #eee;">🟠 <b>ZONA REACTIVA</b><br>(2.0 - 2.9)</td>
+      <td style="padding: 12px; border: 1px solid #eee;">Química de defensa y alerta perpetua. El sistema está saturado y cuesta regresar al centro.</td>
+    </tr>
+    <tr>
+      <td style="padding: 12px; border: 1px solid #eee;">🔴 <b>ZONA DE DESCONEXIÓN</b><br>(1.0 - 1.9)</td>
+      <td style="padding: 12px; border: 1px solid #eee;">Estado profundo de Burnout con sobreactivación constante. Se recomienda ayuda profesional.</td>
+    </tr>
+  </tbody>
+</table>
+""", unsafe_allow_html=True)
+
 
         st.divider()
 
