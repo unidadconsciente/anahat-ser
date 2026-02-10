@@ -460,8 +460,7 @@ if modo == "📝 Índice S.E.R.":
             st.session_state.resultado_listo = True
             st.session_state.res_datos = (nombre, s, e, r, idx, tit, desc)
 
-    if st.session_state.resultado_listo:
-        nombre, s, e, r, idx, tit, desc = st.session_state.res_datos
+    
 
         if st.session_state.resultado_listo:
         nombre, s, e, r, idx, tit, desc = st.session_state.res_datos
