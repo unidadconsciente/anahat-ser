@@ -1,6 +1,3 @@
-te daré todo el codigo, solo corrige esa linea pra que este bien identado y asegurate al 100000#% que la latera será blanca.NO CAMBIES NADA MAS
-
-
 
 import streamlit as st
 
