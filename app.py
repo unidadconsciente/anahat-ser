@@ -335,29 +335,16 @@ def guardar_completo(datos):
 
 
 def obtener_videos():
-
     client = conectar_db()
-
     if client:
-
         try:
-
-            ws = client.worksheet("VIDEOS_AULA")
-
+            # Quitamos el caché y vamos directo a la hoja
+            ws = client.open_by_key(ID_SHEET).worksheet("VIDEOS_AULA")
             records = ws.get_all_records()
-
-            df = pd.DataFrame(records)
-
-            if not df.empty and 'Fecha' in df.columns:
-
-                df['Fecha'] = pd.to_datetime(df['Fecha'])
-
-                df = df.sort_values(by='Fecha', ascending=False)
-
-            return df
-
-        except: pass
-
+            return pd.DataFrame(records) if records else pd.DataFrame()
+        except Exception as e:
+            # ESTA ES LA LÍNEA CLAVE: En lugar de 'pass', dinos el error
+            st.error(f"Error detectado en Railway: {e}")
     return pd.DataFrame()
 
 
