@@ -23,9 +23,7 @@ import os
 
 
 # ==========================================
-
 # 1. DATOS Y TEXTOS
-
 # ==========================================
 
 NIVELES_DATA = [
@@ -61,9 +59,7 @@ from textos_legales import AVISO_LEGAL_COMPLETO, DEFINICIONES_SER
 
 
 # ==========================================
-
 # 2. CONFIGURACIÓN VISUAL
-
 # ==========================================
 
 icono_pagina = "logo.png" if os.path.exists("logo.png") else "🫀"
@@ -78,28 +74,22 @@ st.set_page_config(
 
     layout="centered", 
 
-    initial_sidebar_state="expanded" # Ordena al menú estar abierto
+    initial_sidebar_state="expanded"
 
 )
 
 
 
 CLAVE_AULA = "ANAHAT2026"
-
 ID_SHEET = "1y5FIw_mvGUSKwhc41JaB01Ti6_93dBJmfC1BTpqrvHw"
-
 WHATSAPP = "525539333599"
-
 WEB_LINK = "https://unidadconsciente.com/"
-
 INSTA_LINK = "https://www.instagram.com/unidad_consciente?igsh=Z3hwNzZuOWVjcG91&utm_source=qr"
 
 
 
 COLOR_MORADO = "#4B0082"
-
 COLOR_DORADO = "#DAA520"
-
 COLOR_AZUL = "#008080" 
 
 
@@ -108,89 +98,48 @@ st.markdown(f"""
 
 <style>
 
-    /* 1. ESTO HACE QUE APAREZCA LA BARRA SUPERIOR Y LA FLECHA */
-
     header {{visibility: visible !important;}}
-
-    
-
     footer {{visibility: hidden;}}
-
-    
 
     h1 {{color: {COLOR_MORADO}; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; text-align: center; margin-top: 0;}}
 
-    
-
     .header-brand {{font-size: 24px; font-weight: bold; color: {COLOR_MORADO}; margin-bottom: 0px;}}
-
     .header-links a {{text-decoration: none; color: #666; font-size: 14px; margin-right: 15px;}}
-
     .header-links a:hover {{color: {COLOR_MORADO}; font-weight: bold;}}
 
-    
-
-    /* TABLA DE NIVELES: FORZAR TEXTO BLANCO */
-
     .levels-table {{width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: sans-serif;}}
-
     .levels-table th {{
-
         background-color: {COLOR_MORADO}; 
-
         padding: 12px; 
-
-        color: white !important; /* BLANCO OBLIGATORIO */
-
+        color: white !important;
         text-align: left;
-
         font-weight: bold;
-
     }}
-
     .levels-table td {{padding: 12px; border-bottom: 1px solid #eee; vertical-align: top; color: #333; font-size: 13px;}}
 
-    
-
     .big-score {{font-size: 56px; font-weight: bold; color: {COLOR_MORADO}; line-height: 1;}}
-
     .community-score {{font-size: 16px; color: gray; margin-top: 10px;}}
-
     .kpi-container {{text-align: center; padding: 20px; background-color: #fcfcfc; border-radius: 10px; border: 1px solid #eee;}}
 
-
-
     .def-card {{background-color: #f9f9f9; border-left: 4px solid {COLOR_MORADO}; padding: 10px; border-radius: 4px; height: 100%;}}
-
     .def-title {{color: {COLOR_MORADO}; font-weight: bold; font-size: 14px; margin-bottom: 5px;}}
-
     .def-body {{font-size: 12px; color: #333; line-height: 1.3;}}
-
-
 
     .scale-guide {{background-color: #f0f2f6; color: #333; padding: 10px; border-radius: 5px; text-align: center; font-weight: 600; font-size: 14px; margin-bottom: 15px;}}
 
-    
-
     .stButton>button {{border-radius: 20px; background-color: white; color: {COLOR_MORADO}; border: 1px solid {COLOR_MORADO}; font-weight: bold;}}
-
     .stButton>button:hover {{background-color: {COLOR_MORADO}; color: white;}}
 
 </style>
 
 """, unsafe_allow_html=True)
 
-# ==========================================
 
+
+# ==========================================
 # 3. CONEXIÓN DB (TTL=0)
-
 # ==========================================
 
-
-
-
-
-# --- LÍNEA ANTERIOR ---
 @st.cache_resource(ttl=0) 
 def conectar_db():
     import os
@@ -198,16 +147,11 @@ def conectar_db():
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
-        # 1. LEER DIRECTAMENTE DEL SISTEMA (Ignoramos st.secrets para evitar el error)
-        # Buscamos la variable de entorno que configuraste en el panel de Railway
         env_secrets = os.environ.get("gcp_service_account")
         
         if env_secrets:
-            # Si estamos en Railway, usamos la variable de entorno
             info = json.loads(env_secrets)
         else:
-            # Si no hay variable (estamos en local/Streamlit Cloud), usamos st.secrets
-            # Pero solo lo llamamos si la variable de entorno falla
             info = dict(st.secrets["gcp_service_account"])
 
         creds = Credentials.from_service_account_info(info, scopes=scopes)
@@ -215,7 +159,6 @@ def conectar_db():
         return client.open_by_key(ID_SHEET)
         
     except Exception as e:
-        # Esto te dirá el error real (ej: si el JSON está mal pegado)
         st.error(f"Error técnico real: {e}")
         return None
 
@@ -226,34 +169,24 @@ def obtener_datos_comunidad():
     client = conectar_db()
 
     if client:
-
         try:
-
             ws = client.worksheet("DB_Anahat_Clientes")
-
             records = ws.get_all_records()
-
             df = pd.DataFrame(records)
 
             df.columns = df.columns.str.strip()
-
             cols = ['Score_Somatica', 'Score_Energia', 'Score_Regulacion', 'INDICE_TOTAL']
 
             for c in cols:
-
-                if c in df.columns: df[c] = pd.to_numeric(df[c], errors='coerce')
-
-            
-
-            # Cálculo seguro
+                if c in df.columns:
+                    df[c] = pd.to_numeric(df[c], errors='coerce')
 
             df['Calculado_Total'] = (df['Score_Somatica'] + df['Score_Energia'] + df['Score_Regulacion']) / 3
-
             df = df[(df['Calculado_Total'] >= 1.0) & (df['Calculado_Total'] <= 5.0)]
 
             return df
-
-        except: return pd.DataFrame()
+        except:
+            return pd.DataFrame()
 
     return pd.DataFrame()
 
@@ -261,69 +194,32 @@ def obtener_datos_comunidad():
 
 def verificar_privacidad(email):
 
-    # 1. Obtenemos datos frescos
-
     df = obtener_datos_comunidad()
 
-    
-
-    # 2. Si no hay datos, pedimos aceptar
-
     if df.empty:
-
         return False
-
-
-
-    # 3. Limpieza de nombres de columnas (Quita espacios invisibles en el Excel)
 
     df.columns = df.columns.str.strip()
 
-    
-
-    # Verificamos que existan las columnas necesarias
-
     if 'Email' not in df.columns or 'Privacidad_Aceptada' not in df.columns:
-
         return False
-
-        
-
-    # 4. Limpieza del correo ingresado (minúsculas y sin espacios)
 
     email_clean = email.strip().lower()
-
-    
-
-    # 5. Filtramos por correo (limpiando también la columna del Excel para asegurar coincidencia)
-
     mis_registros = df[df['Email'].astype(str).str.strip().str.lower() == email_clean]
 
-    
-
-    # Si nunca ha usado la app con este correo, debe aceptar
-
     if mis_registros.empty:
-
         return False
 
-        
-
-    # 6. SOLUCIÓN AL BUCLE:
-
-    # Buscamos en TODO el historial si hay algún "SI", "Si", "si" o "Sí".
-
-    # .str.upper().str.startswith('S') detecta cualquier variante que empiece con S.
-
-    aceptados = mis_registros[mis_registros['Privacidad_Aceptada'].astype(str).str.strip().str.upper().str.startswith('S')]
-
-    
+    aceptados = mis_registros[
+        mis_registros['Privacidad_Aceptada']
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .str.startswith('S')
+    ]
 
     if not aceptados.empty:
-
-        return True # ¡Encontró un registro positivo! Acceso concedido.
-
-        
+        return True
 
     return False
 
@@ -334,16 +230,12 @@ def guardar_completo(datos):
     client = conectar_db()
 
     if client:
-
         try:
-
             ws = client.worksheet("DB_Anahat_Clientes")
-
             ws.append_row(datos)
-
             return True
-
-        except: return False
+        except:
+            return False
 
     return False
 
@@ -359,20 +251,21 @@ def obtener_videos():
         ws = client.worksheet("VIDEOS_AULA")
         records = ws.get_all_records()
 
-        if records:
-            df = pd.DataFrame(records)
-            df.columns = [str(c).strip() for c in df.columns]
+        if not records:
+            return pd.DataFrame()
 
-            if 'Fecha' in df.columns:
-                df['Fecha'] = pd.to_datetime(df['Fecha'], errors='coerce')
-                df = df.sort_values(by='Fecha', ascending=False)
+        df = pd.DataFrame(records)
+        df.columns = df.columns.str.strip()
 
-            return df
+        if 'Fecha' in df.columns:
+            df['Fecha'] = pd.to_datetime(df['Fecha'], errors='coerce')
+            df = df.sort_values(by='Fecha', ascending=False)
+
+        return df
 
     except Exception as e:
         st.error(f"Error Aula Virtual: {e}")
-
-    return pd.DataFrame()
+        return pd.DataFrame()
 
     
   
