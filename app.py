@@ -19,7 +19,7 @@ st.set_page_config(page_title="Indice S.E.R. | Anahat", page_icon="🫀", layout
 # 🔐 TUS DATOS
 CLAVE_AULA = "ANAHAT2026"
 ID_SHEET = "1y5FIw_mvGUSKwhc41JaB01Ti6_93dBJmfC1BTpqrvHw"
-WHATSAPP = "525512345678"
+WHATSAPP = "525539333599"
 
 st.markdown("""
 <style>
@@ -32,12 +32,32 @@ st.markdown("""
     .levels-table {width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; font-family: sans-serif;}
     .levels-table th {background-color: #f0f2f6; padding: 12px; border-bottom: 2px solid #4B0082; color: #4B0082; text-align: left;}
     .levels-table td {padding: 12px; border-bottom: 1px solid #eee; vertical-align: top;}
-    .level-desc {color: #333;}
     
     /* KPI Grande */
     .big-score {font-size: 48px; font-weight: bold; color: #4B0082; text-align: center;}
     .kpi-label {font-size: 16px; color: gray; text-align: center; text-transform: uppercase; letter-spacing: 1px;}
     
+    /* TARJETAS DE DEFINICIÓN (DISEÑO BONITO) */
+    .def-card {
+        background-color: #f9f9f9;
+        border-left: 5px solid #4B0082; /* Borde morado Anahat */
+        padding: 15px;
+        border-radius: 5px;
+        height: 100%; /* Para que queden parejas */
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+    }
+    .def-title {
+        color: #4B0082;
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+    .def-body {
+        font-size: 13px;
+        color: #333;
+        line-height: 1.4;
+    }
+
     /* Escala Visual */
     .scale-guide {
         background-color: #f8f9fa; 
@@ -47,7 +67,7 @@ st.markdown("""
         text-align: center; 
         font-weight: 600; 
         margin-bottom: 20px;
-        border-left: 5px solid #4B0082;
+        border: 1px solid #ddd;
         font-size: 14px;
     }
 
@@ -138,12 +158,11 @@ def calcular_ser(resp):
     return round(som,2), round(ene,2), round(reg,2), round(idx,2)
 
 def interpretar(idx):
-    # USAMOS LOS TEXTOS EXACTOS QUE PEDISTE
-    if idx < 2.0: return "🔴 ZONA DE DESCONEXIÓN", "Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional."
-    elif idx < 3.0: return "🟠 ZONA REACTIVA", "Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad."
-    elif idx < 4.0: return "🟡 MODO RESISTENCIA", "Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente."
-    elif idx < 4.6: return "🟢 ZONA DE PRESENCIA", "Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza."
-    else: return "🟣 ALTA SINTERGIA", "Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa."
+    if idx < 2.0: return "🔴 ZONA DE DESCONEXIÓN", "Estado profundo de Burnout. Sistema inmovilizado."
+    elif idx < 3.0: return "🟠 ZONA REACTIVA", "Sistema en defensa y alerta perpetua."
+    elif idx < 4.0: return "🟡 MODO RESISTENCIA", "Funcionalidad mediante tensión sostenida."
+    elif idx < 4.6: return "🟢 ZONA DE PRESENCIA", "Flexibilidad interna y retorno al equilibrio."
+    else: return "🟣 ALTA SINTERGIA", "Coherencia total cerebro-corazón y expansión."
 
 # ==========================================
 # 4. PDF (CORREGIDO)
@@ -162,6 +181,7 @@ def generar_pdf(nombre, s, e, r, idx, estado):
     # 1. Definiciones
     pdf.set_font("Arial", "", 10)
     pdf.set_text_color(50, 50, 50)
+    # Limpiamos caracteres para evitar error
     clean_def = DEFINICIONES_SER.replace("🔹", "-").encode('latin-1', 'replace').decode('latin-1')
     pdf.multi_cell(0, 5, clean_def)
     pdf.ln(5)
@@ -214,8 +234,33 @@ with st.sidebar:
 if modo == "📝 Diagnóstico":
     st.markdown("<h1>Indice S.E.R (Somática, Energía, Regulación) | Anahat</h1>", unsafe_allow_html=True)
     
-    # DESCRIPCIONES (TUS TEXTOS)
-    st.info(DEFINICIONES_SER.replace("🔹", "**").replace(":", "**:") )
+    # --- DISEÑO DE DEFINICIONES CON TARJETAS (NUEVO ESTILO) ---
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="def-card">
+            <div class="def-title">🧘 SOMÁTICA</div>
+            <div class="def-body">Capacidad de tu sistema para percibir, traducir y habitar las señales internas de tu cuerpo como fuente de sabiduría.</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with col2:
+        st.markdown("""
+        <div class="def-card">
+            <div class="def-title">⚡ ENERGÍA</div>
+            <div class="def-body">Cantidad de fuerza vital libre disponible para crear, expandirte y sostener tu propósito con claridad.</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with col3:
+        st.markdown("""
+        <div class="def-card">
+            <div class="def-title">🌊 REGULACIÓN</div>
+            <div class="def-body">Capacidad biológica para transitar los retos de la vida y retornar a la seguridad y el equilibrio natural.</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
     st.divider()
     
     if 'email_ok' not in st.session_state: st.session_state.email_ok = False
@@ -278,7 +323,7 @@ if modo == "📝 Diagnóstico":
             if guardar_completo(datos):
                 st.balloons()
                 
-                # --- DASHBOARD VISUAL (TEXTOS RECUPERADOS) ---
+                # --- DASHBOARD VISUAL ---
                 
                 # KPI
                 st.markdown(f"<div class='kpi-label'>Tu Índice S.E.R.</div><div class='big-score'>{idx}</div>", unsafe_allow_html=True)
@@ -290,11 +335,11 @@ if modo == "📝 Diagnóstico":
                 st.markdown("""
                 <table class="levels-table">
                   <tr><th style="width:140px;">Nivel</th><th>Descripción</th></tr>
-                  <tr><td>🟣 ALTA SINTERGIA<br>(4.6 - 5.0)</td><td><span class="level-desc">Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa.</span></td></tr>
-                  <tr><td>🟢 ZONA DE PRESENCIA<br>(4.0 - 4.5)</td><td><span class="level-desc">Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza.</span></td></tr>
-                  <tr><td>🟡 MODO RESISTENCIA<br>(3.0 - 3.9)</td><td><span class="level-desc">Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente.</span></td></tr>
-                  <tr><td>🟠 ZONA REACTIVA<br>(2.0 - 2.9)</td><td><span class="level-desc">Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad.</span></td></tr>
-                  <tr><td>🔴 ZONA DE DESCONEXIÓN<br>(1.0 - 1.9)</td><td><span class="level-desc">Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional.</span></td></tr>
+                  <tr><td>🟣 ALTA SINTERGIA<br>(4.6 - 5.0)</td><td>Existe una coherencia total entre cerebro y corazón. Tu energía fluye sin obstáculos, permitiendo un estado de presencia absoluta y máxima expansión creativa.</td></tr>
+                  <tr><td>🟢 ZONA DE PRESENCIA<br>(4.0 - 4.5)</td><td>Posees la flexibilidad interna para sentir la intensidad de la vida, trascender sus retos y retornar a tu centro con naturalidad y fortaleza.</td></tr>
+                  <tr><td>🟡 MODO RESISTENCIA<br>(3.0 - 3.9)</td><td>Tu sistema mantiene la funcionalidad a través del esfuerzo y la tensión sostenida, sacrificando la capacidad de soltar y descansar profundamente.</td></tr>
+                  <tr><td>🟠 ZONA REACTIVA<br>(2.0 - 2.9)</td><td>Tu sistema opera bajo una química de defensa y alerta perpetua, bloqueando los mecanismos naturales de calma y seguridad.</td></tr>
+                  <tr><td>🔴 ZONA DE DESCONEXIÓN<br>(1.0 - 1.9)</td><td>Estado profundo de Burnout. El sistema nervioso activa la inmovilización para preservar la vida. Puede haber lesiones cerebrales (como PTSD); es necesaria la intervención profesional.</td></tr>
                 </table>
                 """, unsafe_allow_html=True)
                 
