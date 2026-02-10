@@ -335,16 +335,35 @@ def guardar_completo(datos):
 
 
 def obtener_videos():
-    client = conectar_db()
+    # 1. No usamos el cliente global, pedimos una conexión nueva cada vez
+    client = conectar_db() 
     if client:
         try:
-            # Quitamos el caché y vamos directo a la hoja
-            ws = client.open_by_key(ID_SHEET).worksheet("VIDEOS_AULA")
-            records = ws.get_all_records()
-            return pd.DataFrame(records) if records else pd.DataFrame()
+            # 2. Forzamos la apertura del Spreadsheet para invalidar cualquier caché de Railway
+            sh = client.open_by_key(ID_SHEET)
+            
+            # 3. Accedemos a la hoja directamente
+            ws = sh.worksheet("VIDEOS_AULA")
+            
+            # 4. Traemos los datos. Si get_all_records falla, usamos get_all_values
+            try:
+                records = ws.get_all_records()
+            except:
+                data = ws.get_all_values()
+                records = [dict(zip(data[0], row)) for row in data[1:]] if len(data) > 1 else []
+            
+            if records:
+                df = pd.DataFrame(records)
+                # Limpieza de nombres de columnas
+                df.columns = [str(c).strip() for c in df.columns]
+                
+                if 'Fecha' in df.columns:
+                    df['Fecha'] = pd.to_datetime(df['Fecha'], errors='coerce')
+                    df = df.sort_values(by='Fecha', ascending=False)
+                return df
         except Exception as e:
-            # ESTA ES LA LÍNEA CLAVE: En lugar de 'pass', dinos el error
-            st.error(f"Error detectado en Railway: {e}")
+            # Si esto sale, Railway nos dirá el error exacto
+            st.error(f"Error técnico: {e}")
     return pd.DataFrame()
 
 
