@@ -825,7 +825,7 @@ if modo == "📝 Índice S.E.R.":
         st.divider()
 
         df_com = obtener_datos_comunidad()
-        prom_total = df_com["Calculado_Total"].mean() if not df_com.empty else 0
+        prom_total = df_com["INDICE_TOTAL"].mean() if not df_com.empty else 0
 
         c1, c2 = st.columns(2)
 
@@ -905,7 +905,7 @@ if modo == "📝 Índice S.E.R.":
 
                      st.markdown("##### 📈 Tu Evolución en el Tiempo")
 
-                     fig_line = px.line(mis_datos, x='Fecha', y='Calculado_Total', markers=True)
+                     fig_line = px.line(mis_datos, x='Fecha', y='INDICE_TOTAL', markers=True)
 
                      fig_line.update_traces(line_color=COLOR_MORADO)
 
